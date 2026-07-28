@@ -1,0 +1,47 @@
+# 默认忽略的文件
+/shelf/
+/workspace.xml
+# 基于编辑器的 HTTP 客户端请求
+/httpRequests/
+# 已忽略包含查询文件的默认文件夹
+/queries/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+
+#测试类
+*Test.java
+**/test/
+
+
+# Maven 编译产物
+**/target/
+*.jar
+*.war
+
+# 日志
+**/logs/
+*.log
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# VS Code
+**/.vscode/
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 本地配置与敏感信息
+.env
+application-local.yml
+application-local.yaml
+application-secret.yml
+
+# 临时文件
+*.tmp
+*.swp
+*~
+
