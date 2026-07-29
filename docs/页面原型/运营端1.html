@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>景点运营管理端原型</title>
+<style>
+:root{--primary:#f5a623;--sidebar:#303746;--sidebarActive:#454e60;--bg:#f5f6f8;--card:#fff;--text:#222;--muted:#788190;--border:#e5e8ed;--success:#16845b;--danger:#c94a45;--warning:#a97800}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text)}button,input,select,textarea{font:inherit}
+.app{min-height:100vh;display:grid;grid-template-columns:220px 1fr;grid-template-rows:64px 1fr}
+.topbar{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:linear-gradient(90deg,#ffb31a,#f4a900);box-shadow:0 1px 6px rgba(0,0,0,.12);z-index:2}
+.brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:700}.brand-mark{width:36px;height:36px;border-radius:9px;background:#fff;color:#d98d0f;display:grid;place-items:center;font-size:20px}
+.top-actions{display:flex;gap:18px;align-items:center;font-size:14px}.user-chip{padding:9px 14px;background:rgba(255,255,255,.8);border-radius:8px}
+.sidebar{background:var(--sidebar);color:#dfe4ec;padding:18px 12px}.venue-label{padding:12px;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,.1);font-size:13px;color:#aeb6c5}
+.nav{display:flex;flex-direction:column;gap:7px}.nav button{width:100%;display:flex;gap:12px;align-items:center;border:0;border-radius:8px;padding:12px 14px;color:#dfe4ec;background:transparent;cursor:pointer;text-align:left}.nav button:hover,.nav button.active{background:var(--sidebarActive);color:#fff}.nav-icon{width:24px;text-align:center}
+main{padding:24px;overflow:auto}.page{display:none}.page.active{display:block}.page-header{margin-bottom:18px}.page-header h1{margin:0 0 6px;font-size:24px}.page-header p{margin:0;color:var(--muted);font-size:14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 8px rgba(31,42,68,.04);padding:20px;margin-bottom:18px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:16px;margin-bottom:18px}.stat{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px}.stat-label{color:var(--muted);font-size:13px}.stat-value{margin-top:8px;font-size:28px;font-weight:700}.stat-note{margin-top:6px;color:var(--muted);font-size:12px}
+.toolbar{display:flex;justify-content:space-between;align-items:end;gap:14px;flex-wrap:wrap;margin-bottom:16px}.filters{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:13px;color:#555d6b}
+input,select,textarea{border:1px solid #d8dde5;border-radius:7px;background:#fff;padding:9px 11px;min-height:38px;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(245,166,35,.13)}
+.btn{border:0;border-radius:7px;padding:10px 16px;cursor:pointer}.btn-primary{background:var(--primary);color:#222}.btn-secondary{background:#eceff3;color:#303642}.btn-link{border:0;padding:0;margin-right:12px;background:none;color:#2878d0;cursor:pointer}
+table{width:100%;border-collapse:collapse}th,td{padding:13px 12px;border-bottom:1px solid var(--border);text-align:left;font-size:14px;vertical-align:middle}th{color:#596171;background:#fafbfc;font-weight:600}
+.status{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:12px;background:#eef1f5;color:#4b5563}.status.success{color:#167a50;background:#e9f8f1}.status.warning{color:#8c6500;background:#fff6dc}.status.danger{color:#a53a37;background:#fff0ef}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:16px}.form-grid .full{grid-column:1/-1}textarea{resize:vertical;min-height:110px}.section-title{margin:0 0 16px;font-size:17px}.pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;color:var(--muted);font-size:13px}.page-size,.pagination-controls,.page-numbers{display:flex;align-items:center;gap:8px}.page-size select{min-height:32px;padding:4px 28px 4px 8px}.page-btn{min-width:32px;height:32px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer}.page-btn:hover:not(:disabled){border-color:var(--primary)}.page-btn.active{background:var(--primary);border-color:var(--primary);color:#222;font-weight:600}.page-btn:disabled{opacity:.45;cursor:not-allowed}.empty-row td{text-align:center;color:var(--muted);padding:30px}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,24,33,.45);z-index:10}.modal.open{display:flex}.modal-panel{width:min(680px,calc(100vw - 32px));max-height:88vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.modal-header,.modal-footer{padding:18px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}.modal-footer{border-top:1px solid var(--border);border-bottom:0;justify-content:flex-end;gap:10px}.modal-body{padding:20px}
+@media(max-width:900px){.app{grid-template-columns:72px 1fr}.sidebar{padding:14px 8px}.venue-label,.nav-label{display:none}.nav button{justify-content:center}.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><div class="brand-mark">旅</div><span>文旅票务运营端</span></div>
+  <div class="top-actions"><span>当前景点：海湾科技馆</span><span class="user-chip">运营者 · operator01 ▾</span></div>
+</header>
+<aside class="sidebar">
+  <div class="venue-label">景点运营工作台</div>
+  <nav class="nav">
+    <button class="active" data-page="dashboard"><span class="nav-icon">▦</span><span class="nav-label">工作台</span></button>
+    <button data-page="venue"><span class="nav-icon">⌂</span><span class="nav-label">景点信息</span></button>
+    <button data-page="sessions"><span class="nav-icon">◷</span><span class="nav-label">场次管理</span></button>
+    <button data-page="ticketTypes"><span class="nav-icon">票</span><span class="nav-label">票种管理</span></button>
+    <button data-page="orders"><span class="nav-icon">▤</span><span class="nav-label">订单查询</span></button>
+    <button data-page="verification"><span class="nav-icon">✓</span><span class="nav-label">核销记录</span></button>
+    <button data-page="staff"><span class="nav-icon">人</span><span class="nav-label">工作人员</span></button>
+  </nav>
+</aside>
+<main>
+<section class="page active" id="dashboard">
+  <div class="page-header"><h1>工作台</h1><p>查看今日预约与入馆情况。</p></div>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">今日开放场次</div><div class="stat-value">4</div><div class="stat-note">均处于可预约状态</div></div>
+    <div class="stat"><div class="stat-label">今日预约人数</div><div class="stat-value">326</div><div class="stat-note">总容量 500</div></div>
+    <div class="stat"><div class="stat-label">今日已核销</div><div class="stat-value">184</div><div class="stat-note">核销率 56.4%</div></div>
+    <div class="stat"><div class="stat-label">待支付订单</div><div class="stat-value">12</div><div class="stat-note">超时后自动关闭</div></div>
+  </div>
+  <div class="card"><h2 class="section-title">今日场次概览</h2><table><thead><tr><th>场次</th><th>预约人数</th><th>剩余容量</th><th>状态</th></tr></thead><tbody>
+    <tr><td>09:00 - 11:00</td><td>96</td><td>24</td><td><span class="status success">开放预约</span></td></tr>
+    <tr><td>11:30 - 13:30</td><td>82</td><td>38</td><td><span class="status success">开放预约</span></td></tr>
+    <tr><td>14:00 - 16:00</td><td>88</td><td>32</td><td><span class="status success">开放预约</span></td></tr>
+    <tr><td>16:30 - 18:30</td><td>60</td><td>80</td><td><span class="status warning">尚未开始</span></td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="page" id="venue">
+  <div class="page-header"><h1>景点信息</h1><p>维护当前景点的基础展示资料。</p></div>
+  <div class="card"><div class="form-grid">
+    <div class="field"><label>景点名称</label><input value="海湾科技馆"></div>
+    <div class="field"><label>运营状态</label><select><option>启用</option><option>停用</option></select></div>
+    <div class="field full"><label>景点地址</label><input value="广州市番禺区海湾大道 88 号"></div>
+    <div class="field full"><label>景点简介</label><textarea>面向公众开放的综合性科技文化场馆，提供常设展览与主题活动。</textarea></div>
+    <div class="field full"><label>封面图片地址</label><input value="https://example.com/venue-cover.jpg"></div>
+  </div><div style="margin-top:18px"><button class="btn btn-primary">保存修改</button></div></div>
+</section>
+
+<section class="page" id="sessions">
+  <div class="page-header"><h1>场次管理</h1><p>维护参观日期、时间段与共享容量。</p></div>
+  <div class="card">
+    <div class="toolbar"><div class="filters">
+      <div class="field"><label>参观日期</label><input id="sessionDate" type="date"></div>
+      <div class="field"><label>状态</label><select id="sessionStatus"><option>全部</option><option>开放预约</option><option>草稿</option><option>已关闭</option><option>已取消</option></select></div>
+      <button class="btn btn-secondary" data-query="sessions">查询</button>
+    </div><button class="btn btn-primary" data-open="sessionModal">+ 新建场次</button></div>
+    <table><thead><tr><th>日期</th><th>时间段</th><th>总容量</th><th>剩余容量</th><th>可售票种</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody id="sessionsBody"></tbody>
+    </table>
+    <div class="pagination" id="sessionsPager">
+      <div class="page-size">每页
+        <select data-page-size="sessions"><option value="5">5</option><option value="10">10</option><option value="20">20</option></select>条
+      </div>
+      <div class="pagination-controls">
+        <span data-page-info="sessions"></span>
+        <button class="page-btn" data-page-action="prev" data-table="sessions">‹</button>
+        <div class="page-numbers" data-page-numbers="sessions"></div>
+        <button class="page-btn" data-page-action="next" data-table="sessions">›</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="ticketTypes">
+  <div class="page-header"><h1>票种管理</h1><p>维护当前景点可使用的票种与基础价格。</p></div>
+  <div class="card">
+    <div class="toolbar"><div class="filters">
+      <div class="field"><label>票种名称</label><input id="ticketName" placeholder="请输入票种名称"></div>
+      <button class="btn btn-secondary" data-query="ticketTypes">查询</button>
+    </div><button class="btn btn-primary" data-open="ticketModal">+ 新建票种</button></div>
+    <table><thead><tr><th>票种名称</th><th>基础价格</th><th>适用说明</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody id="ticketTypesBody"></tbody>
+    </table>
+    <div class="pagination" id="ticketTypesPager">
+      <div class="page-size">每页
+        <select data-page-size="ticketTypes"><option value="5">5</option><option value="10">10</option><option value="20">20</option></select>条
+      </div>
+      <div class="pagination-controls">
+        <span data-page-info="ticketTypes"></span>
+        <button class="page-btn" data-page-action="prev" data-table="ticketTypes">‹</button>
+        <div class="page-numbers" data-page-numbers="ticketTypes"></div>
+        <button class="page-btn" data-page-action="next" data-table="ticketTypes">›</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="orders">
+  <div class="page-header"><h1>订单查询</h1><p>查询当前景点的预约订单，不在此页面修改业务状态。</p></div>
+  <div class="card">
+    <div class="toolbar"><div class="filters">
+      <div class="field"><label>订单号</label><input id="orderNo" placeholder="请输入订单号"></div>
+      <div class="field"><label>订单状态</label><select id="orderStatus"><option>全部</option><option>待支付</option><option>已支付</option><option>已取消</option><option>已完成</option></select></div>
+      <div class="field"><label>参观日期</label><input id="orderDate" type="date"></div>
+      <button class="btn btn-secondary" data-query="orders">查询</button>
+    </div></div>
+    <table><thead><tr><th>订单号</th><th>游客</th><th>参观场次</th><th>人数</th><th>金额</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+      <tbody id="ordersBody"></tbody>
+    </table>
+    <div class="pagination" id="ordersPager">
+      <div class="page-size">每页
+        <select data-page-size="orders"><option value="5">5</option><option value="10">10</option><option value="20">20</option></select>条
+      </div>
+      <div class="pagination-controls">
+        <span data-page-info="orders"></span>
+        <button class="page-btn" data-page-action="prev" data-table="orders">‹</button>
+        <div class="page-numbers" data-page-numbers="orders"></div>
+        <button class="page-btn" data-page-action="next" data-table="orders">›</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="verification">
+  <div class="page-header"><h1>核销记录</h1><p>查看工作人员的票券核销结果。</p></div>
+  <div class="card">
+    <div class="toolbar"><div class="filters">
+      <div class="field"><label>票码</label><input id="verifyCode" placeholder="请输入票码"></div>
+      <div class="field"><label>核销结果</label><select id="verifyResult"><option>全部</option><option>成功</option><option>失败</option></select></div>
+      <div class="field"><label>核销日期</label><input id="verifyDate" type="date"></div>
+      <button class="btn btn-secondary" data-query="verification">查询</button>
+    </div></div>
+    <table><thead><tr><th>核销时间</th><th>票码</th><th>参观人</th><th>票种</th><th>工作人员</th><th>结果</th><th>失败原因</th></tr></thead>
+      <tbody id="verificationBody"></tbody>
+    </table>
+    <div class="pagination" id="verificationPager">
+      <div class="page-size">每页
+        <select data-page-size="verification"><option value="5">5</option><option value="10">10</option><option value="20">20</option></select>条
+      </div>
+      <div class="pagination-controls">
+        <span data-page-info="verification"></span>
+        <button class="page-btn" data-page-action="prev" data-table="verification">‹</button>
+        <div class="page-numbers" data-page-numbers="verification"></div>
+        <button class="page-btn" data-page-action="next" data-table="verification">›</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="staff">
+  <div class="page-header"><h1>工作人员</h1><p>创建和停用当前景点的核销工作人员账号。</p></div>
+  <div class="card">
+    <div class="toolbar"><div class="filters">
+      <div class="field"><label>姓名或账号</label><input id="staffKeyword" placeholder="请输入姓名或账号"></div>
+      <button class="btn btn-secondary" data-query="staff">查询</button>
+    </div><button class="btn btn-primary" data-open="staffModal">+ 新建工作人员</button></div>
+    <table><thead><tr><th>姓名</th><th>登录账号</th><th>手机号</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+      <tbody id="staffBody"></tbody>
+    </table>
+    <div class="pagination" id="staffPager">
+      <div class="page-size">每页
+        <select data-page-size="staff"><option value="5">5</option><option value="10">10</option><option value="20">20</option></select>条
+      </div>
+      <div class="pagination-controls">
+        <span data-page-info="staff"></span>
+        <button class="page-btn" data-page-action="prev" data-table="staff">‹</button>
+        <div class="page-numbers" data-page-numbers="staff"></div>
+        <button class="page-btn" data-page-action="next" data-table="staff">›</button>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+</div>
+
+<div class="modal" id="sessionModal"><div class="modal-panel">
+  <div class="modal-header"><strong>新建场次</strong><button class="btn-link" data-close>关闭</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="field"><label>参观日期</label><input type="date"></div>
+    <div class="field"><label>总容量</label><input type="number" value="120"></div>
+    <div class="field"><label>开始时间</label><input type="time"></div>
+    <div class="field"><label>结束时间</label><input type="time"></div>
+    <div class="field"><label>开始预约时间</label><input type="datetime-local"></div>
+    <div class="field"><label>停止预约时间</label><input type="datetime-local"></div>
+    <div class="field full"><label>可售票种</label><select multiple size="3"><option>成人票</option><option>学生票</option><option>儿童票</option></select></div>
+  </div></div>
+  <div class="modal-footer"><button class="btn btn-secondary" data-close>取消</button><button class="btn btn-primary">保存场次</button></div>
+</div></div>
+
+<div class="modal" id="ticketModal"><div class="modal-panel">
+  <div class="modal-header"><strong>新建票种</strong><button class="btn-link" data-close>关闭</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="field"><label>票种名称</label><input placeholder="例如：学生票"></div>
+    <div class="field"><label>基础价格</label><input type="number" step="0.01" value="0.00"></div>
+    <div class="field full"><label>适用说明</label><textarea placeholder="填写适用人群及证件要求"></textarea></div>
+  </div></div>
+  <div class="modal-footer"><button class="btn btn-secondary" data-close>取消</button><button class="btn btn-primary">保存票种</button></div>
+</div></div>
+
+<div class="modal" id="staffModal"><div class="modal-panel">
+  <div class="modal-header"><strong>新建工作人员</strong><button class="btn-link" data-close>关闭</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="field"><label>姓名</label><input></div>
+    <div class="field"><label>登录账号</label><input></div>
+    <div class="field"><label>手机号</label><input></div>
+    <div class="field"><label>初始密码</label><input type="password"></div>
+  </div></div>
+  <div class="modal-footer"><button class="btn btn-secondary" data-close>取消</button><button class="btn btn-primary">创建账号</button></div>
+</div></div>
+
+<script>
+const navButtons=document.querySelectorAll(".nav button"),pages=document.querySelectorAll(".page");
+navButtons.forEach(button=>button.addEventListener("click",()=>{
+  navButtons.forEach(x=>x.classList.remove("active"));
+  pages.forEach(x=>x.classList.remove("active"));
+  button.classList.add("active");
+  document.getElementById(button.dataset.page).classList.add("active");
+}));
+document.querySelectorAll("[data-open]").forEach(button=>button.addEventListener("click",()=>document.getElementById(button.dataset.open).classList.add("open")));
+document.querySelectorAll("[data-close]").forEach(button=>button.addEventListener("click",()=>button.closest(".modal").classList.remove("open")));
+document.querySelectorAll(".modal").forEach(modal=>modal.addEventListener("click",event=>{if(event.target===modal)modal.classList.remove("open")}));
+
+const data = {
+  sessions: [
+    {date:"2026-08-01",time:"09:00 - 11:00",total:120,remain:24,types:"成人票、学生票、儿童票",status:"开放预约"},
+    {date:"2026-08-01",time:"11:30 - 13:30",total:120,remain:38,types:"成人票、学生票",status:"开放预约"},
+    {date:"2026-08-01",time:"14:00 - 16:00",total:120,remain:32,types:"成人票、学生票、儿童票",status:"开放预约"},
+    {date:"2026-08-01",time:"16:30 - 18:30",total:140,remain:80,types:"成人票、学生票",status:"开放预约"},
+    {date:"2026-08-02",time:"09:00 - 11:00",total:150,remain:150,types:"尚未配置",status:"草稿"},
+    {date:"2026-08-02",time:"11:30 - 13:30",total:150,remain:150,types:"成人票、学生票",status:"草稿"},
+    {date:"2026-08-03",time:"09:00 - 11:00",total:120,remain:0,types:"成人票、学生票、儿童票",status:"已关闭"},
+    {date:"2026-08-03",time:"14:00 - 16:00",total:120,remain:18,types:"成人票、学生票",status:"开放预约"},
+    {date:"2026-08-04",time:"09:00 - 11:00",total:120,remain:120,types:"成人票",status:"草稿"},
+    {date:"2026-08-04",time:"14:00 - 16:00",total:120,remain:120,types:"成人票、学生票",status:"已取消"},
+    {date:"2026-08-05",time:"09:00 - 11:00",total:160,remain:94,types:"成人票、学生票、儿童票",status:"开放预约"},
+    {date:"2026-08-05",time:"14:00 - 16:00",total:160,remain:160,types:"成人票、学生票",status:"草稿"}
+  ],
+  ticketTypes: [
+    {name:"成人票",price:"¥60.00",rule:"普通成年游客",status:"启用"},
+    {name:"学生票",price:"¥30.00",rule:"需携带有效学生证",status:"启用"},
+    {name:"儿童票",price:"¥0.00",rule:"身高 1.2 米以下儿童",status:"启用"},
+    {name:"老人票",price:"¥20.00",rule:"65 周岁及以上游客",status:"启用"},
+    {name:"亲子套票",price:"¥100.00",rule:"一名成人与一名儿童",status:"停用"},
+    {name:"团体票",price:"¥45.00",rule:"10 人及以上团队",status:"启用"},
+    {name:"教师票",price:"¥30.00",rule:"需携带教师资格证明",status:"停用"},
+    {name:"军人优待票",price:"¥0.00",rule:"需携带有效军人证件",status:"启用"}
+  ],
+  orders: [
+    {no:"BK202608010001",user:"李清欢",date:"2026-08-01",session:"2026-08-01 09:00",count:2,amount:"¥90.00",status:"已支付",created:"2026-07-29 09:20"},
+    {no:"BK202608010002",user:"陈小雨",date:"2026-08-01",session:"2026-08-01 11:30",count:1,amount:"¥60.00",status:"待支付",created:"2026-07-29 09:31"},
+    {no:"BK202608010003",user:"王一帆",date:"2026-08-01",session:"2026-08-01 14:00",count:3,amount:"¥120.00",status:"已取消",created:"2026-07-29 09:43"},
+    {no:"BK202608010004",user:"周晓敏",date:"2026-08-01",session:"2026-08-01 16:30",count:2,amount:"¥60.00",status:"已支付",created:"2026-07-29 10:02"},
+    {no:"BK202608020001",user:"林俊杰",date:"2026-08-02",session:"2026-08-02 09:00",count:1,amount:"¥30.00",status:"已完成",created:"2026-07-29 10:18"},
+    {no:"BK202608020002",user:"黄思琪",date:"2026-08-02",session:"2026-08-02 11:30",count:4,amount:"¥180.00",status:"已支付",created:"2026-07-29 10:35"},
+    {no:"BK202608030001",user:"张伟",date:"2026-08-03",session:"2026-08-03 09:00",count:2,amount:"¥120.00",status:"待支付",created:"2026-07-29 11:04"},
+    {no:"BK202608030002",user:"赵敏",date:"2026-08-03",session:"2026-08-03 14:00",count:1,amount:"¥60.00",status:"已完成",created:"2026-07-29 11:28"},
+    {no:"BK202608040001",user:"许晨",date:"2026-08-04",session:"2026-08-04 09:00",count:2,amount:"¥30.00",status:"已取消",created:"2026-07-29 12:10"},
+    {no:"BK202608050001",user:"孙悦",date:"2026-08-05",session:"2026-08-05 09:00",count:3,amount:"¥150.00",status:"已支付",created:"2026-07-29 13:25"},
+    {no:"BK202608050002",user:"梁宇",date:"2026-08-05",session:"2026-08-05 14:00",count:1,amount:"¥0.00",status:"已完成",created:"2026-07-29 14:16"},
+    {no:"BK202608050003",user:"郑琳",date:"2026-08-05",session:"2026-08-05 14:00",count:2,amount:"¥90.00",status:"待支付",created:"2026-07-29 15:42"}
+  ],
+  verification: [
+    {time:"2026-08-01 09:06",date:"2026-08-01",code:"TK-A8F29X2",visitor:"李清欢",type:"学生票",staff:"检票员01",result:"成功",reason:"—"},
+    {time:"2026-08-01 09:09",date:"2026-08-01",code:"TK-B11A8K0",visitor:"陈晓",type:"成人票",staff:"检票员01",result:"失败",reason:"票券已核销"},
+    {time:"2026-08-01 09:15",date:"2026-08-01",code:"TK-C51M7P3",visitor:"王一帆",type:"成人票",staff:"检票员02",result:"成功",reason:"—"},
+    {time:"2026-08-01 09:18",date:"2026-08-01",code:"TK-D21K9Q8",visitor:"周小雨",type:"儿童票",staff:"检票员02",result:"成功",reason:"—"},
+    {time:"2026-08-01 09:33",date:"2026-08-01",code:"TK-E91P4S0",visitor:"赵敏",type:"学生票",staff:"检票员01",result:"失败",reason:"票券尚未生效"},
+    {time:"2026-08-01 10:02",date:"2026-08-01",code:"TK-F84L2D6",visitor:"林俊杰",type:"成人票",staff:"检票员01",result:"成功",reason:"—"},
+    {time:"2026-08-02 09:08",date:"2026-08-02",code:"TK-G11R7V9",visitor:"黄思琪",type:"成人票",staff:"检票员02",result:"成功",reason:"—"},
+    {time:"2026-08-02 09:12",date:"2026-08-02",code:"TK-H55T1N4",visitor:"张伟",type:"学生票",staff:"检票员02",result:"失败",reason:"票券已作废"},
+    {time:"2026-08-02 09:21",date:"2026-08-02",code:"TK-J24B8X7",visitor:"孙悦",type:"老人票",staff:"检票员01",result:"成功",reason:"—"},
+    {time:"2026-08-03 14:06",date:"2026-08-03",code:"TK-K13F6M2",visitor:"郑琳",type:"成人票",staff:"检票员03",result:"成功",reason:"—"}
+  ],
+  staff: [
+    {name:"张敏",account:"checker01",phone:"138****6201",status:"启用",created:"2026-07-20"},
+    {name:"刘明",account:"checker02",phone:"139****8032",status:"停用",created:"2026-07-22"},
+    {name:"陈静",account:"checker03",phone:"136****1156",status:"启用",created:"2026-07-23"},
+    {name:"王浩",account:"checker04",phone:"135****9281",status:"启用",created:"2026-07-24"},
+    {name:"李雪",account:"checker05",phone:"137****3418",status:"启用",created:"2026-07-24"},
+    {name:"周成",account:"checker06",phone:"188****7620",status:"停用",created:"2026-07-25"},
+    {name:"赵然",account:"checker07",phone:"186****4492",status:"启用",created:"2026-07-26"},
+    {name:"孙敏",account:"checker08",phone:"189****5384",status:"启用",created:"2026-07-27"}
+  ]
+};
+
+const states = Object.fromEntries(Object.keys(data).map(key=>[key,{page:1,pageSize:5}]));
+
+function statusClass(status){
+  if(["开放预约","启用","已支付","已完成","成功"].includes(status)) return "success";
+  if(["草稿","待支付"].includes(status)) return "warning";
+  if(["已关闭","已取消","停用","失败"].includes(status)) return "danger";
+  return "";
+}
+
+const configs = {
+  sessions: {
+    body:"sessionsBody",
+    filter:item=>{
+      const date=document.getElementById("sessionDate").value;
+      const status=document.getElementById("sessionStatus").value;
+      return (!date||item.date===date)&&(status==="全部"||item.status===status);
+    },
+    row:item=>`<tr><td>${item.date}</td><td>${item.time}</td><td>${item.total}</td><td>${item.remain}</td><td>${item.types}</td><td><span class="status ${statusClass(item.status)}">${item.status}</span></td><td><button class="btn-link">${item.status==="草稿"?"编辑":"详情"}</button><button class="btn-link">${item.status==="草稿"?"发布":"关闭"}</button></td></tr>`
+  },
+  ticketTypes: {
+    body:"ticketTypesBody",
+    filter:item=>{
+      const keyword=document.getElementById("ticketName").value.trim().toLowerCase();
+      return !keyword||item.name.toLowerCase().includes(keyword);
+    },
+    row:item=>`<tr><td>${item.name}</td><td>${item.price}</td><td>${item.rule}</td><td><span class="status ${statusClass(item.status)}">${item.status}</span></td><td><button class="btn-link">编辑</button><button class="btn-link">${item.status==="启用"?"停用":"启用"}</button></td></tr>`
+  },
+  orders: {
+    body:"ordersBody",
+    filter:item=>{
+      const no=document.getElementById("orderNo").value.trim().toLowerCase();
+      const status=document.getElementById("orderStatus").value;
+      const date=document.getElementById("orderDate").value;
+      return (!no||item.no.toLowerCase().includes(no))&&(status==="全部"||item.status===status)&&(!date||item.date===date);
+    },
+    row:item=>`<tr><td>${item.no}</td><td>${item.user}</td><td>${item.session}</td><td>${item.count}</td><td>${item.amount}</td><td><span class="status ${statusClass(item.status)}">${item.status}</span></td><td>${item.created}</td><td><button class="btn-link">详情</button></td></tr>`
+  },
+  verification: {
+    body:"verificationBody",
+    filter:item=>{
+      const code=document.getElementById("verifyCode").value.trim().toLowerCase();
+      const result=document.getElementById("verifyResult").value;
+      const date=document.getElementById("verifyDate").value;
+      return (!code||item.code.toLowerCase().includes(code))&&(result==="全部"||item.result===result)&&(!date||item.date===date);
+    },
+    row:item=>`<tr><td>${item.time}</td><td>${item.code}</td><td>${item.visitor}</td><td>${item.type}</td><td>${item.staff}</td><td><span class="status ${statusClass(item.result)}">${item.result}</span></td><td>${item.reason}</td></tr>`
+  },
+  staff: {
+    body:"staffBody",
+    filter:item=>{
+      const keyword=document.getElementById("staffKeyword").value.trim().toLowerCase();
+      return !keyword||item.name.toLowerCase().includes(keyword)||item.account.toLowerCase().includes(keyword);
+    },
+    row:item=>`<tr><td>${item.name}</td><td>${item.account}</td><td>${item.phone}</td><td><span class="status ${statusClass(item.status)}">${item.status}</span></td><td>${item.created}</td><td><button class="btn-link">${item.status==="启用"?"重置密码":"启用"}</button>${item.status==="启用"?'<button class="btn-link">停用</button>':""}</td></tr>`
+  }
+};
+
+function filteredData(key){
+  return data[key].filter(configs[key].filter);
+}
+
+function renderTable(key){
+  const state=states[key];
+  const rows=filteredData(key);
+  const totalPages=Math.max(1,Math.ceil(rows.length/state.pageSize));
+  if(state.page>totalPages) state.page=totalPages;
+
+  const start=(state.page-1)*state.pageSize;
+  const pageRows=rows.slice(start,start+state.pageSize);
+  const body=document.getElementById(configs[key].body);
+  body.innerHTML=pageRows.length?pageRows.map(configs[key].row).join(""):'<tr class="empty-row"><td colspan="10">暂无符合条件的数据</td></tr>';
+
+  const info=document.querySelector(`[data-page-info="${key}"]`);
+  info.textContent=`共 ${rows.length} 条，第 ${state.page}/${totalPages} 页`;
+
+  const prev=document.querySelector(`[data-table="${key}"][data-page-action="prev"]`);
+  const next=document.querySelector(`[data-table="${key}"][data-page-action="next"]`);
+  prev.disabled=state.page<=1;
+  next.disabled=state.page>=totalPages;
+
+  const numbers=document.querySelector(`[data-page-numbers="${key}"]`);
+  numbers.innerHTML="";
+  const maxButtons=5;
+  let first=Math.max(1,state.page-Math.floor(maxButtons/2));
+  let last=Math.min(totalPages,first+maxButtons-1);
+  first=Math.max(1,last-maxButtons+1);
+
+  for(let page=first;page<=last;page++){
+    const button=document.createElement("button");
+    button.className=`page-btn${page===state.page?" active":""}`;
+    button.textContent=page;
+    button.addEventListener("click",()=>{state.page=page;renderTable(key)});
+    numbers.appendChild(button);
+  }
+}
+
+document.querySelectorAll("[data-query]").forEach(button=>{
+  button.addEventListener("click",()=>{
+    const key=button.dataset.query;
+    states[key].page=1;
+    renderTable(key);
+  });
+});
+
+document.querySelectorAll("[data-page-size]").forEach(select=>{
+  select.addEventListener("change",()=>{
+    const key=select.dataset.pageSize;
+    states[key].pageSize=Number(select.value);
+    states[key].page=1;
+    renderTable(key);
+  });
+});
+
+document.querySelectorAll("[data-page-action]").forEach(button=>{
+  button.addEventListener("click",()=>{
+    const key=button.dataset.table;
+    const state=states[key];
+    state.page+=button.dataset.pageAction==="prev"?-1:1;
+    renderTable(key);
+  });
+});
+
+Object.keys(configs).forEach(renderTable);
+</script>
+</body>
+</html>
