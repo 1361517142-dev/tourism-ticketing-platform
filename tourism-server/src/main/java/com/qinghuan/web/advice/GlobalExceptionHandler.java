@@ -85,11 +85,11 @@ public class GlobalExceptionHandler {
     private HttpStatus statusOf(ErrorCode errorCode) {
         return switch (errorCode) {
             case INVALID_REQUEST -> HttpStatus.BAD_REQUEST;
-            case UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
+            case UNAUTHORIZED, USER_NOT_FOUND -> HttpStatus.UNAUTHORIZED;
             case FORBIDDEN -> HttpStatus.FORBIDDEN;
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
             case CONFLICT -> HttpStatus.CONFLICT;
-            case SUCCESS, INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
+            case SUCCESS, INTERNAL_ERROR, GENERIC_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
     }
 }

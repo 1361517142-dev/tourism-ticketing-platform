@@ -11,7 +11,9 @@ public enum ErrorCode {
     FORBIDDEN("FORBIDDEN", "无权执行该操作"),
     NOT_FOUND("NOT_FOUND", "请求的资源不存在"),
     CONFLICT("CONFLICT", "当前状态不允许执行该操作"),
-    INTERNAL_ERROR("INTERNAL_ERROR", "系统繁忙，请稍后重试");
+    INTERNAL_ERROR("INTERNAL_ERROR", "系统繁忙，请稍后重试"),
+    GENERIC_ERROR("GENERIC_ERROR", "出错了，请联系管理员"),
+    USER_NOT_FOUND("USER_NOT_FOUND", "用户不存在");
 
     private final String code;
     private final String message;

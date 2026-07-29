@@ -11,6 +11,7 @@ public class UserAccount extends BaseEntity {
 
     private String loginName;
     private String passwordHash;
+    private String password;
     private String displayName;
     private String phone;
     private AccountRole roleCode;

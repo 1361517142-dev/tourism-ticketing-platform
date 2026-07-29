@@ -8,8 +8,8 @@ spring:
   # MySQL 数据源。启动前必须通过环境变量提供账号和密码。
   datasource:
     url: ${DB_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:tourism_ticketing_platform}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:baidu12345}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       # 连接池大小应结合数据库最大连接数和服务实例数调整。
@@ -42,7 +42,7 @@ spring:
 
   mvc:
     # 启用 RFC 9457 Problem Details，便于统一返回接口错误。
-    problemdetails:
+    problem details:
       enabled: true
 
   lifecycle:
@@ -68,8 +68,7 @@ server:
     include-binding-errors: never
 
 mybatis:
-  # Mapper XML 建议统一放在 src/main/resources/mapper 下。
-  mapper-locations: classpath*:mapper/**/*.xml
+  mapper-locations: classpath:mapper/**/*.xml
   type-aliases-package: com.qinghuan.pojo.entity
   configuration:
     map-underscore-to-camel-case: true
@@ -78,6 +77,34 @@ mybatis:
 logging:
   level:
     root: INFO
-    com.qinghuan: ${APP_LOG_LEVEL:INFO}
+    com.qinghuan: DEBUG
+    org.flywaydb: DEBUG
+    org.springframework.boot.flyway: DEBUG
+
+  file:
+    name: logs/tourism-server.log
+
+  logback:
+    rolling policy:
+      file-name-pattern: logs/tourism-server.%d{yyyy-MM-dd}.%i.log.gz
+      max-file-size: 10MB
+      max-history: 30
+      total-size-cap: 1GB
+
   pattern:
-    dateformat: yyyy-MM-dd HH:mm:ss.SSS
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# JWT 密钥必须是至少 32 字节随机值的 Base64 编码，示例：openssl rand -base64 32。
+security:
+  jwt:
+    secret: ${JWT_SECRET:xdOZKwwUsqn/61S40mPfDsPXLt4zQsAlxtMG8wtF160=}
+    issuer: tourism-ticketing-platform
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:2h}
+    excluded-paths:
+      - /auth/login
+      - /auth/register
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /v3/api-docs/**
+      - /error
