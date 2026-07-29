@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>景点运营管理端原型</title>
+<style>
+:root{--primary:#f5a623;--sidebar:#303746;--sidebarActive:#454e60;--bg:#f5f6f8;--card:#fff;--text:#222;--muted:#788190;--border:#e5e8ed;--success:#16845b;--danger:#c94a45;--warning:#a97800}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text)}button,input,select,textarea{font:inherit}
+.app{min-height:100vh;display:grid;grid-template-columns:220px 1fr;grid-template-rows:64px 1fr}
+.topbar{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:linear-gradient(90deg,#ffb31a,#f4a900);box-shadow:0 1px 6px rgba(0,0,0,.12);z-index:2}
+.brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:700}.brand-mark{width:36px;height:36px;border-radius:9px;background:#fff;color:#d98d0f;display:grid;place-items:center;font-size:20px}
+.top-actions{display:flex;gap:18px;align-items:center;font-size:14px}.user-chip{padding:9px 14px;background:rgba(255,255,255,.8);border-radius:8px}
+.sidebar{background:var(--sidebar);color:#dfe4ec;padding:18px 12px}.venue-label{padding:12px;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,.1);font-size:13px;color:#aeb6c5}
+.nav{display:flex;flex-direction:column;gap:7px}.nav button{width:100%;display:flex;gap:12px;align-items:center;border:0;border-radius:8px;padding:12px 14px;color:#dfe4ec;background:transparent;cursor:pointer;text-align:left}.nav button:hover,.nav button.active{background:var(--sidebarActive);color:#fff}.nav-icon{width:24px;text-align:center}
+main{padding:24px;overflow:auto}.page{display:none}.page.active{display:block}.page-header{margin-bottom:18px}.page-header h1{margin:0 0 6px;font-size:24px}.page-header p{margin:0;color:var(--muted);font-size:14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 8px rgba(31,42,68,.04);padding:20px;margin-bottom:18px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:16px;margin-bottom:18px}.stat{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px}.stat-label{color:var(--muted);font-size:13px}.stat-value{margin-top:8px;font-size:28px;font-weight:700}.stat-note{margin-top:6px;color:var(--muted);font-size:12px}
+.toolbar{display:flex;justify-content:space-between;align-items:end;gap:14px;flex-wrap:wrap;margin-bottom:16px}.filters{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:13px;color:#555d6b}
+input,select,textarea{border:1px solid #d8dde5;border-radius:7px;background:#fff;padding:9px 11px;min-height:38px;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(245,166,35,.13)}
+.btn{border:0;border-radius:7px;padding:10px 16px;cursor:pointer}.btn-primary{background:var(--primary);color:#222}.btn-secondary{background:#eceff3;color:#303642}.btn-link{border:0;padding:0;margin-right:12px;background:none;color:#2878d0;cursor:pointer}
+table{width:100%;border-collapse:collapse}th,td{padding:13px 12px;border-bottom:1px solid var(--border);text-align:left;font-size:14px;vertical-align:middle}th{color:#596171;background:#fafbfc;font-weight:600}
+.status{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:12px;background:#eef1f5;color:#4b5563}.status.success{color:#167a50;background:#e9f8f1}.status.warning{color:#8c6500;background:#fff6dc}.status.danger{color:#a53a37;background:#fff0ef}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:16px}.form-grid .full{grid-column:1/-1}textarea{resize:vertical;min-height:110px}.section-title{margin:0 0 16px;font-size:17px}.pagination{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:16px;color:var(--muted);font-size:13px}.page-btn{min-width:32px;height:32px;border:1px solid var(--border);border-radius:6px;background:#fff}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,24,33,.45);z-index:10}.modal.open{display:flex}.modal-panel{width:min(680px,calc(100vw - 32px));max-height:88vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.modal-header,.modal-footer{padding:18px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}.modal-footer{border-top:1px solid var(--border);border-bottom:0;justify-content:flex-end;gap:10px}.modal-body{padding:20px}
+@media(max-width:900px){.app{grid-template-columns:72px 1fr}.sidebar{padding:14px 8px}.venue-label,.nav-label{display:none}.nav button{justify-content:center}.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><div class="brand-mark">旅</div><span>文旅票务运营端</span></div>
+  <div class="top-actions"><span>当前景点：海湾科技馆</span><span class="user-chip">运营者 · operator01 ▾</span></div>
+</header>
+<aside class="sidebar">
+  <div class="venue-label">景点运营工作台</div>
+  <nav class="nav">
+    <button class="active" data-page="dashboard"><span class="nav-icon">▦</span><span class="nav-label">工作台</span></button>
+    <button data-page="venue"><span class="nav-icon">⌂</span><span class="nav-label">景点信息</span></button>
+    <button data-page="sessions"><span class="nav-icon">◷</span><span class="nav-label">场次管理</span></button>
+    <button data-page="ticketTypes"><span class="nav-icon">票</span><span class="nav-label">票种管理</span></button>
+    <button data-page="orders"><span class="nav-icon">▤</span><span class="nav-label">订单查询</span></button>
+    <button data-page="verification"><span class="nav-icon">✓</span><span class="nav-label">核销记录</span></button>
+    <button data-page="staff"><span class="nav-icon">人</span><span class="nav-label">工作人员</span></button>
+  </nav>
+</aside>
+<main>
+<section class="page active" id="dashboard">
+  <div class="page-header"><h1>工作台</h1><p>查看今日预约与入馆情况。</p></div>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">今日开放场次</div><div class="stat-value">4</div><div class="stat-note">均处于可预约状态</div></div>
+    <div class="stat"><div class="stat-label">今日预约人数</div><div class="stat-value">326</div><div class="stat-note">总容量 500</div></div>
+    <div class="stat"><div class="stat-label">今日已核销</div><div class="stat-value">184</div><div class="stat-note">核销率 56.4%</div></div>
+    <div class="stat"><div class="stat-label">待支付订单</div><div class="stat-value">12</div><div class="stat-note">超时后自动关闭</div></div>
+  </div>
+  <div class="card"><h2 class="section-title">今日场次概览</h2><table><thead><tr><th>场次</th><th>预约人数</th><th>剩余容量</th><th>状态</th></tr></thead><tbody>
+    <tr><td>09:00 - 11:00</td><td>96</td><td>24</td><td><span class="status success">开放预约</span></td></tr>
+    <tr><td>11:30 - 13:30</td><td>82</td><td>38</td><td><span class="status success">开放预约</span></td></tr>
+    <tr><td>14:00 - 16:00</td><td>88</td><td>32</td><td><span class="status success">开放预约</span></td></tr>
+    <tr><td>16:30 - 18:30</td><td>60</td><td>80</td><td><span class="status warning">尚未开始</span></td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="page" id="venue">
+  <div class="page-header"><h1>景点信息</h1><p>维护当前景点的基础展示资料。</p></div>
+  <div class="card"><div class="form-grid">
+    <div class="field"><label>景点名称</label><input value="海湾科技馆"></div>
+    <div class="field"><label>运营状态</label><select><option>启用</option><option>停用</option></select></div>
+    <div class="field full"><label>景点地址</label><input value="广州市番禺区海湾大道 88 号"></div>
+    <div class="field full"><label>景点简介</label><textarea>面向公众开放的综合性科技文化场馆，提供常设展览与主题活动。</textarea></div>
+    <div class="field full"><label>封面图片地址</label><input value="https://example.com/venue-cover.jpg"></div>
+  </div><div style="margin-top:18px"><button class="btn btn-primary">保存修改</button></div></div>
+</section>
+
+<section class="page" id="sessions">
+  <div class="page-header"><h1>场次管理</h1><p>维护参观日期、时间段与共享容量。</p></div>
+  <div class="card">
+    <div class="toolbar"><div class="filters">
+      <div class="field"><label>参观日期</label><input type="date" value="2026-08-01"></div>
+      <div class="field"><label>状态</label><select><option>全部</option><option>开放预约</option><option>草稿</option><option>已取消</option></select></div>
+      <button class="btn btn-secondary">查询</button>
+    </div><button class="btn btn-primary" data-open="sessionModal">+ 新建场次</button></div>
+    <table><thead><tr><th>日期</th><th>时间段</th><th>总容量</th><th>剩余容量</th><th>可售票种</th><th>状态</th><th>操作</th></tr></thead><tbody>
+      <tr><td>2026-08-01</td><td>09:00 - 11:00</td><td>120</td><td>24</td><td>成人票、学生票、儿童票</td><td><span class="status success">开放预约</span></td><td><button class="btn-link">详情</button><button class="btn-link">关闭</button></td></tr>
+      <tr><td>2026-08-01</td><td>11:30 - 13:30</td><td>120</td><td>38</td><td>成人票、学生票</td><td><span class="status success">开放预约</span></td><td><button class="btn-link">详情</button><button class="btn-link">关闭</button></td></tr>
+      <tr><td>2026-08-02</td><td>09:00 - 11:00</td><td>150</td><td>150</td><td>尚未配置</td><td><span class="status warning">草稿</span></td><td><button class="btn-link">编辑</button><button class="btn-link">发布</button></td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<section class="page" id="ticketTypes">
+  <div class="page-header"><h1>票种管理</h1><p>维护当前景点可使用的票种与基础价格。</p></div>
+  <div class="card">
+    <div class="toolbar"><div class="filters"><div class="field"><label>票种名称</label><input placeholder="请输入票种名称"></div><button class="btn btn-secondary">查询</button></div><button class="btn btn-primary" data-open="ticketModal">+ 新建票种</button></div>
+    <table><thead><tr><th>票种名称</th><th>基础价格</th><th>适用说明</th><th>状态</th><th>操作</th></tr></thead><tbody>
+      <tr><td>成人票</td><td>¥60.00</td><td>普通成年游客</td><td><span class="status success">启用</span></td><td><button class="btn-link">编辑</button><button class="btn-link">停用</button></td></tr>
+      <tr><td>学生票</td><td>¥30.00</td><td>需携带有效学生证</td><td><span class="status success">启用</span></td><td><button class="btn-link">编辑</button><button class="btn-link">停用</button></td></tr>
+      <tr><td>儿童票</td><td>¥0.00</td><td>身高 1.2 米以下儿童</td><td><span class="status success">启用</span></td><td><button class="btn-link">编辑</button><button class="btn-link">停用</button></td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<section class="page" id="orders">
+  <div class="page-header"><h1>订单查询</h1><p>查询当前景点的预约订单，不在此页面修改业务状态。</p></div>
+  <div class="card">
+    <div class="toolbar"><div class="filters">
+      <div class="field"><label>订单号</label><input placeholder="请输入订单号"></div>
+      <div class="field"><label>订单状态</label><select><option>全部</option><option>待支付</option><option>已支付</option><option>已取消</option><option>已完成</option></select></div>
+      <div class="field"><label>参观日期</label><input type="date"></div><button class="btn btn-secondary">查询</button>
+    </div></div>
+    <table><thead><tr><th>订单号</th><th>游客</th><th>参观场次</th><th>人数</th><th>金额</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody>
+      <tr><td>BK202608010001</td><td>李清欢</td><td>2026-08-01 09:00</td><td>2</td><td>¥90.00</td><td><span class="status success">已支付</span></td><td>2026-07-29 09:20</td><td><button class="btn-link">详情</button></td></tr>
+      <tr><td>BK202608010002</td><td>陈小雨</td><td>2026-08-01 11:30</td><td>1</td><td>¥60.00</td><td><span class="status warning">待支付</span></td><td>2026-07-29 09:31</td><td><button class="btn-link">详情</button></td></tr>
+      <tr><td>BK202608010003</td><td>王一帆</td><td>2026-08-01 14:00</td><td>3</td><td>¥120.00</td><td><span class="status danger">已取消</span></td><td>2026-07-29 09:43</td><td><button class="btn-link">详情</button></td></tr>
+    </tbody></table>
+    <div class="pagination"><span>共 3 条</span><button class="page-btn">‹</button><button class="page-btn">1</button><button class="page-btn">›</button></div>
+  </div>
+</section>
+
+<section class="page" id="verification">
+  <div class="page-header"><h1>核销记录</h1><p>查看工作人员的票券核销结果。</p></div>
+  <div class="card">
+    <div class="toolbar"><div class="filters">
+      <div class="field"><label>票码</label><input placeholder="请输入票码"></div>
+      <div class="field"><label>核销结果</label><select><option>全部</option><option>成功</option><option>失败</option></select></div>
+      <div class="field"><label>核销日期</label><input type="date" value="2026-08-01"></div><button class="btn btn-secondary">查询</button>
+    </div></div>
+    <table><thead><tr><th>核销时间</th><th>票码</th><th>参观人</th><th>票种</th><th>工作人员</th><th>结果</th><th>失败原因</th></tr></thead><tbody>
+      <tr><td>2026-08-01 09:06</td><td>TK-A8F29X2</td><td>李清欢</td><td>学生票</td><td>检票员01</td><td><span class="status success">成功</span></td><td>—</td></tr>
+      <tr><td>2026-08-01 09:09</td><td>TK-B11A8K0</td><td>陈晓</td><td>成人票</td><td>检票员01</td><td><span class="status danger">失败</span></td><td>票券已核销</td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<section class="page" id="staff">
+  <div class="page-header"><h1>工作人员</h1><p>创建和停用当前景点的核销工作人员账号。</p></div>
+  <div class="card">
+    <div class="toolbar"><div class="filters"><div class="field"><label>姓名或账号</label><input placeholder="请输入姓名或账号"></div><button class="btn btn-secondary">查询</button></div><button class="btn btn-primary" data-open="staffModal">+ 新建工作人员</button></div>
+    <table><thead><tr><th>姓名</th><th>登录账号</th><th>手机号</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody>
+      <tr><td>张敏</td><td>checker01</td><td>138****6201</td><td><span class="status success">启用</span></td><td>2026-07-20</td><td><button class="btn-link">重置密码</button><button class="btn-link">停用</button></td></tr>
+      <tr><td>刘明</td><td>checker02</td><td>139****8032</td><td><span class="status danger">停用</span></td><td>2026-07-22</td><td><button class="btn-link">启用</button></td></tr>
+    </tbody></table>
+  </div>
+</section>
+</main>
+</div>
+
+<div class="modal" id="sessionModal"><div class="modal-panel">
+  <div class="modal-header"><strong>新建场次</strong><button class="btn-link" data-close>关闭</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="field"><label>参观日期</label><input type="date"></div>
+    <div class="field"><label>总容量</label><input type="number" value="120"></div>
+    <div class="field"><label>开始时间</label><input type="time"></div>
+    <div class="field"><label>结束时间</label><input type="time"></div>
+    <div class="field"><label>开始预约时间</label><input type="datetime-local"></div>
+    <div class="field"><label>停止预约时间</label><input type="datetime-local"></div>
+    <div class="field full"><label>可售票种</label><select multiple size="3"><option>成人票</option><option>学生票</option><option>儿童票</option></select></div>
+  </div></div>
+  <div class="modal-footer"><button class="btn btn-secondary" data-close>取消</button><button class="btn btn-primary">保存场次</button></div>
+</div></div>
+
+<div class="modal" id="ticketModal"><div class="modal-panel">
+  <div class="modal-header"><strong>新建票种</strong><button class="btn-link" data-close>关闭</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="field"><label>票种名称</label><input placeholder="例如：学生票"></div>
+    <div class="field"><label>基础价格</label><input type="number" step="0.01" value="0.00"></div>
+    <div class="field full"><label>适用说明</label><textarea placeholder="填写适用人群及证件要求"></textarea></div>
+  </div></div>
+  <div class="modal-footer"><button class="btn btn-secondary" data-close>取消</button><button class="btn btn-primary">保存票种</button></div>
+</div></div>
+
+<div class="modal" id="staffModal"><div class="modal-panel">
+  <div class="modal-header"><strong>新建工作人员</strong><button class="btn-link" data-close>关闭</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="field"><label>姓名</label><input></div>
+    <div class="field"><label>登录账号</label><input></div>
+    <div class="field"><label>手机号</label><input></div>
+    <div class="field"><label>初始密码</label><input type="password"></div>
+  </div></div>
+  <div class="modal-footer"><button class="btn btn-secondary" data-close>取消</button><button class="btn btn-primary">创建账号</button></div>
+</div></div>
+
+<script>
+const navButtons=document.querySelectorAll(".nav button"),pages=document.querySelectorAll(".page");
+navButtons.forEach(button=>button.addEventListener("click",()=>{navButtons.forEach(x=>x.classList.remove("active"));pages.forEach(x=>x.classList.remove("active"));button.classList.add("active");document.getElementById(button.dataset.page).classList.add("active")}));
+document.querySelectorAll("[data-open]").forEach(button=>button.addEventListener("click",()=>document.getElementById(button.dataset.open).classList.add("open")));
+document.querySelectorAll("[data-close]").forEach(button=>button.addEventListener("click",()=>button.closest(".modal").classList.remove("open")));
+document.querySelectorAll(".modal").forEach(modal=>modal.addEventListener("click",event=>{if(event.target===modal)modal.classList.remove("open")}));
+</script>
+</body>
+</html>
