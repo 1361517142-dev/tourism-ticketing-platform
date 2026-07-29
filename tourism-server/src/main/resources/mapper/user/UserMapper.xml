@@ -6,15 +6,60 @@
   namespace: 必须与对应的 Mapper 接口全限定名完全一致
 -->
 <mapper namespace="com.qinghuan.user.UserMapper">
+
     <insert id="saveAccount" parameterType="com.qinghuan.pojo.entity.UserAccount">
         insert into user_account(login_name, password_hash, display_name, phone, role_code, venue_id, status)
         values (#{loginName}, #{passwordHash}, #{displayName}, #{phone}, #{roleCode}, #{venueId}, #{status})
     </insert>
+    <update id="updateAccount">
+        update user_account
+        <set>
+            <if test="passwordHash != null">
+                password_hash = #{passwordHash},
+            </if>
+            <if test="displayName != null">
+                display_name = #{displayName},
+            </if>
+            <if test="phone != null">
+                phone = #{phone},
+            </if>
+            <if test="roleCode != null">
+                role_code = #{roleCode}
+            </if>
+            <if test="status != null" >
+                status = #{status}
+            </if>
+        </set>
+        <where>
+            id = #{id}
+        </where>
+    </update>
+    <update id="updateStaffInfo">
+        update user_account
+        set display_name = #{updateDTO.displayName},
+            phone = #{updateDTO.phone}
+        where id = #{staffId}
+          and role_code = 'STAFF'
+          and venue_id = #{venueId}
+    </update>
     <select id="getAccountByLoginNameAndPasswordHash" resultType="com.qinghuan.pojo.entity.UserAccount">
         select id, login_name, password_hash, display_name, phone, role_code, venue_id, status from user_account where login_name = #{loginName} and password_hash = #{passwordHash}
     </select>
     <select id="getAccountByLoginName" resultType="com.qinghuan.pojo.entity.UserAccount">
         select id, login_name, password_hash, display_name, phone, role_code, venue_id, status from user_account where login_name = #{loginName}
+    </select>
+    <select id="pageQuery" resultType="com.qinghuan.pojo.vo.UserAccountVO">
+        select id, login_name, display_name, phone, role_code, venue_id, status, created_at from user_account
+            <where>
+                    and role_code = #{roleCode}
+                <if test="keyword != null and keyword != ''">
+                    and (login_name like concat('%', #{keyword}, '%') or display_name like concat('%', #{keyword}, '%'))
+                </if>
+                <if test="status != null and status != ''">
+                    and status = #{status}
+                </if>
+            </where>
+        order by created_at desc
     </select>
 
 </mapper>

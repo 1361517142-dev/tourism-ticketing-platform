@@ -6,12 +6,13 @@ import java.util.Objects;
 /**
  * 通用分页响应。
  */
+//items 当前页的条目， total 总条目数， page 当前页码， size 每页大小
 public record PageResult<T>(List<T> items, long total, int page, int size) {
 
     public PageResult {
-        items = List.copyOf(Objects.requireNonNull(items, "items must not be null"));
+        items = List.copyOf(Objects.requireNonNull(items, "返回条目不能为空"));
         if (total < 0 || page < 1 || size < 1) {
-            throw new IllegalArgumentException("invalid pagination metadata");
+            throw new IllegalArgumentException("不合法的分页元数据");
         }
     }
 

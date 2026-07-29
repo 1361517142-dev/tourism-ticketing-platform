@@ -100,7 +100,7 @@ security:
   jwt:
     secret: ${JWT_SECRET:xdOZKwwUsqn/61S40mPfDsPXLt4zQsAlxtMG8wtF160=}
     issuer: tourism-ticketing-platform
-    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:2h}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:12h}
     excluded-paths:
       - /auth/login
       - /auth/register

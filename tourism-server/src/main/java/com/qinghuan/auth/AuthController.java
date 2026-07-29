@@ -15,6 +15,8 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+
+    // 登录
     @PostMapping("/login")
     public ApiResponse<String> login(@RequestBody UserAccountDTO userAccountDTO) {
         log.info("登录账号: {}", userAccountDTO.getLoginName());

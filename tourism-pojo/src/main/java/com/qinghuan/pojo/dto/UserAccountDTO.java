@@ -1,5 +1,6 @@
 package com.qinghuan.pojo.dto;
 
+import com.qinghuan.pojo.enums.AccountRole;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
