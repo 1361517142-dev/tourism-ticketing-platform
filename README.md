@@ -82,3 +82,9 @@
 - 工作人员端 `/staff`
 
 - 管理员端 `/admin`
+
+## 访问控制
+
+```text
+前期用if判断(AOP)自动进行+数据库where强制限定，后期换Spring Security
+```

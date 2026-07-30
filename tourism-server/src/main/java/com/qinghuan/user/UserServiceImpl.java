@@ -2,6 +2,7 @@ package com.qinghuan.user;
 
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.qinghuan.annotation.RefreshCreateTimeOrUpdateTime;
 import com.qinghuan.auth.context.UserContext;
 import com.qinghuan.auth.model.LoginUser;
 import com.qinghuan.common.exception.BusinessException;
@@ -11,6 +12,7 @@ import com.qinghuan.pojo.dto.UserAccountPageQueryDTO;
 import com.qinghuan.pojo.entity.UserAccount;
 import com.qinghuan.pojo.enums.AccountRole;
 import com.qinghuan.pojo.enums.AccountStatus;
+import com.qinghuan.pojo.enums.OperationType;
 import com.qinghuan.pojo.vo.PageResult;
 import com.qinghuan.pojo.vo.UserAccountVO;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,7 @@ public class UserServiceImpl implements UserService {
     // 保存工作人员账号
     @Transactional
     @Override
+    @RefreshCreateTimeOrUpdateTime(value = OperationType.INSERT)
     public void saveStaffAccount(UserAccount userAccount) {
         log.info("保存工作人员账号：{}", userAccount);
         //检查是否已存在相同账号名
@@ -70,17 +73,22 @@ public class UserServiceImpl implements UserService {
     }
 
     // 修改工作人员账号状态
+    @RefreshCreateTimeOrUpdateTime(value = OperationType.UPDATE)
     @Override
     public void changeStaffAccountStatus(AccountStatus status, Long id) {
         UserAccount userAccount = new UserAccount();
         userAccount.setId(id);
         userAccount.setStatus(status);
-        userMapper.updateAccount(userAccount);
+        Integer updateRows = userMapper.updateAccount(userAccount, UserContext.getRequired().venueId());
+        if (updateRows == 0) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "工作人员不属于当前景点");
+        }
     }
 
     /**
      * 使用当前运营者的景点 ID 约束更新范围，避免跨景点修改工作人员资料。
      */
+    @RefreshCreateTimeOrUpdateTime(value = OperationType.UPDATE)
     @Transactional
     @Override
     public void updateStaffAccount(Long staffId, StaffAccountUpdateDTO updateDTO) {

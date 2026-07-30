@@ -2,42 +2,45 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<!--
-  namespace: 必须与对应的 Mapper 接口全限定名完全一致
--->
+
 <mapper namespace="com.qinghuan.user.UserMapper">
 
-    <insert id="saveAccount" parameterType="com.qinghuan.pojo.entity.UserAccount">
-        insert into user_account(login_name, password_hash, display_name, phone, role_code, venue_id, status)
-        values (#{loginName}, #{passwordHash}, #{displayName}, #{phone}, #{roleCode}, #{venueId}, #{status})
+    <insert id="saveAccount">
+        insert into user_account(login_name, password_hash, display_name, phone, role_code, venue_id, status, created_at, updated_at)
+        values (#{loginName}, #{passwordHash}, #{displayName}, #{phone}, #{roleCode}, #{venueId}, #{status}, #{createdAt}, #{updatedAt})
     </insert>
     <update id="updateAccount">
         update user_account
         <set>
-            <if test="passwordHash != null">
-                password_hash = #{passwordHash},
+            <if test="account.passwordHash != null">
+                password_hash = #{account.passwordHash},
             </if>
-            <if test="displayName != null">
-                display_name = #{displayName},
+            <if test="account.displayName != null">
+                display_name = #{account.displayName},
             </if>
-            <if test="phone != null">
-                phone = #{phone},
+            <if test="account.phone != null">
+                phone = #{account.phone},
             </if>
-            <if test="roleCode != null">
-                role_code = #{roleCode}
+            <if test="account.roleCode != null">
+                role_code = #{account.roleCode}
             </if>
-            <if test="status != null" >
-                status = #{status}
+            <if test="account.status != null" >
+                status = #{account.status}
+            </if>
+            <if test="account.updatedAt != null">
+                updated_at = #{account.updatedAt}
             </if>
         </set>
         <where>
-            id = #{id}
+            id = #{account.id}
+            and venue_id = #{venueId}
         </where>
     </update>
     <update id="updateStaffInfo">
         update user_account
         set display_name = #{updateDTO.displayName},
             phone = #{updateDTO.phone}
+            updated_at = #{updateDTO.updatedAt}
         where id = #{staffId}
           and role_code = 'STAFF'
           and venue_id = #{venueId}
@@ -52,6 +55,7 @@
         select id, login_name, display_name, phone, role_code, venue_id, status, created_at from user_account
             <where>
                     and role_code = #{roleCode}
+                    and venue_id = #{venueId}
                 <if test="keyword != null and keyword != ''">
                     and (login_name like concat('%', #{keyword}, '%') or display_name like concat('%', #{keyword}, '%'))
                 </if>

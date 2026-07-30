@@ -11,6 +11,7 @@
         <relativePath/>
     </parent>
 
+
     <groupId>com.qinghuan</groupId>
     <artifactId>tourism-ticketing-platform</artifactId>
     <version>1.0-SNAPSHOT</version>
