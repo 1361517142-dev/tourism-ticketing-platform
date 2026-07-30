@@ -17,7 +17,7 @@ import java.util.Arrays;
 public class RolePermissionAspect {
 
     // 权限检查
-    @Before("@annotation(com.qinghuan.annotation.RequireRole)")
+    @Before("@annotation(requireRole)")
     public void checkPermission(RequireRole requireRole) {
         LoginUser loginUser = UserContext.getRequired();
         if (Arrays.stream(requireRole.value()).anyMatch(role -> role == loginUser.roleCode())) {

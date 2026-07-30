@@ -8,9 +8,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class UserAccountPageQueryDTO {
-    Integer page;
-    Integer pageSize;
-    String keyword;
-    String status;
-    String roleCode;
+    private Integer page = 1;
+    private Integer pageSize = 20;
+    private String keyword;
+    private String status;
+    private String roleCode;
+    private Long venueId;
 }

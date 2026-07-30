@@ -19,7 +19,8 @@ public interface UserMapper {
     //账号分页查询
     public Page<UserAccountVO> pageQuery(UserAccountPageQueryDTO userAccountPageQueryDTO);
     //更新账号信息
-    public Integer updateAccount(@Param("account") UserAccount userAccount, Long venueId);
+    public Integer updateAccount(@Param("account") UserAccount userAccount,
+                                 @Param("venueId") Long venueId);
 
     // 通过景点和角色限制更新范围，避免运营者修改其他景点的账号。
     int updateStaffInfo(@Param("staffId") Long staffId,

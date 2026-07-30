@@ -5,6 +5,7 @@ import com.qinghuan.auth.model.LoginUser;
 import com.qinghuan.common.exception.BusinessException;
 import com.qinghuan.common.exception.ErrorCode;
 import com.qinghuan.pojo.entity.UserAccount;
+import com.qinghuan.pojo.enums.AccountStatus;
 import com.qinghuan.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,9 @@ public class AuthServiceImpl implements AuthService {
         //验证账号信息
         if (foundUserAccount == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        if (foundUserAccount.getStatus() != AccountStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "账号已停用");
         }
 
         //签发Token

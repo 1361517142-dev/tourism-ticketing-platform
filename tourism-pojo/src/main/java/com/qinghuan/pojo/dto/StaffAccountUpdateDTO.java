@@ -6,8 +6,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-
 /**
  * 运营者修改工作人员基本资料的请求参数。
  * 登录账号、密码、状态和所属景点由各自的业务接口处理。
@@ -23,5 +21,4 @@ public class StaffAccountUpdateDTO {
     @NotBlank(message = "手机号不能为空")
     @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确")
     private String phone;
-    private LocalDateTime updateAt;
 }

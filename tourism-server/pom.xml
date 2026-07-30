@@ -14,6 +14,7 @@
     <description>tourism-server</description>
 
     <properties>
+        <aliyun-oss.version>3.18.4</aliyun-oss.version>
         <jjwt.version>0.13.0</jjwt.version>
     </properties>
 
@@ -112,6 +113,11 @@
             <groupId>com.github.pagehelper</groupId>
             <artifactId>pagehelper-spring-boot-starter</artifactId>
             <version>1.4.7</version>
+        </dependency>
+        <dependency>
+            <groupId>com.aliyun.oss</groupId>
+            <artifactId>aliyun-sdk-oss</artifactId>
+            <version>${aliyun-oss.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

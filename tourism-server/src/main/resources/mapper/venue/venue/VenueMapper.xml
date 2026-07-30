@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.qinghuan.venue.VenueMapper">
+    <update id="updateVenue">
+        update venue
+        <set>
+            <if test="newVenue.name != null">
+                name = #{newVenue.name},
+            </if>
+            <if test="newVenue.address != null">
+                address = #{newVenue.address},
+            </if>
+            <if test="newVenue.description != null">
+                description = #{newVenue.description},
+            </if>
+            <if test="newVenue.coverObjectKey != null">
+                cover_object_key = #{newVenue.coverObjectKey},
+            </if>
+            <if test="newVenue.status != null">
+                status = #{newVenue.status},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <select id="getVenueById" resultType="com.qinghuan.pojo.entity.Venue">
+        select id, name, address, description, cover_object_key, status, created_at, updated_at
+        from venue
+        where id = #{id}
+    </select>
+</mapper>

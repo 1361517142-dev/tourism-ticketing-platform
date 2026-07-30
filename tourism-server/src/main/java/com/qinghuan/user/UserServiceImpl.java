@@ -68,6 +68,7 @@ public class UserServiceImpl implements UserService {
     public PageResult<UserAccountVO> StaffAccountPageQuery(UserAccountPageQueryDTO userAccountPageQueryDTO) {
         PageHelper.startPage(userAccountPageQueryDTO.getPage(), userAccountPageQueryDTO.getPageSize());
         userAccountPageQueryDTO.setRoleCode(AccountRole.STAFF.name());
+        userAccountPageQueryDTO.setVenueId(UserContext.getRequired().venueId());
         Page<UserAccountVO> page = userMapper.pageQuery(userAccountPageQueryDTO);
         return new PageResult<UserAccountVO>((List<UserAccountVO>)page.getResult(), page.getTotal(), page.getPageNum(), page.getPageSize());
     }

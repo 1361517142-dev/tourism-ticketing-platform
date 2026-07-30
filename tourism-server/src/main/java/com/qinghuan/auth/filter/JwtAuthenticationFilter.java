@@ -3,6 +3,7 @@ package com.qinghuan.auth.filter;
 import com.qinghuan.auth.config.JwtProperties;
 import com.qinghuan.auth.context.UserContext;
 import com.qinghuan.auth.jwt.JwtUtils;
+import com.qinghuan.auth.model.LoginUser;
 import com.qinghuan.common.exception.ErrorCode;
 import com.qinghuan.common.response.ApiResponse;
 import io.jsonwebtoken.JwtException;
@@ -61,17 +62,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
+        LoginUser loginUser;
         try {
             String token = resolveBearerToken(request);
             if (token == null) {
                 writeUnauthorized(response, "请先登录");
                 return;
             }
-
-            UserContext.set(jwtUtils.parseAccessToken(token));
-            filterChain.doFilter(request, response);
+            loginUser = jwtUtils.parseAccessToken(token);
         } catch (JwtException | IllegalArgumentException exception) {
             writeUnauthorized(response, "登录状态已失效，请重新登录");
+            return;
+        }
+
+        UserContext.set(loginUser);
+        try {
+            filterChain.doFilter(request, response);
         } finally {
             UserContext.clear();
         }
