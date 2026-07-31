@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -15,5 +16,7 @@ public class TicketType extends BaseEntity {
     private String description;
     private String audienceRule;
     private BigDecimal basePrice;
-    private TicketTypeStatus status;
+    private TicketTypeStatus status = TicketTypeStatus.ENABLED;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

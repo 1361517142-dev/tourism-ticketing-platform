@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Validated
-@Tag(name = "用户管理")
+@Tag(name = "UserController", description = "用户管理")
 public class UserController {
 
     private final UserService userService;

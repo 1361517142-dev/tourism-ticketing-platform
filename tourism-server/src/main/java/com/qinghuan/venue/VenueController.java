@@ -4,6 +4,8 @@ import com.qinghuan.annotation.RequireRole;
 import com.qinghuan.common.response.ApiResponse;
 import com.qinghuan.pojo.entity.Venue;
 import com.qinghuan.pojo.enums.AccountRole;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
+@Tag(name = "VenueController", description = "景点管理")
 public class VenueController {
 
     @Autowired
@@ -26,6 +29,7 @@ public class VenueController {
      */
     @GetMapping("/operator/venue")
     @RequireRole(AccountRole.OPERATOR)
+    @Operation(summary = "获取当前景点信息")
     public ApiResponse<Venue> getCurrentVenue() {
         return ApiResponse.success(venueService.getCurrentVenue());
     }
@@ -35,6 +39,7 @@ public class VenueController {
      */
     @PutMapping("/operator/venue")
     @RequireRole(AccountRole.OPERATOR)
+    @Operation(summary = "修改当前景点信息")
     public ApiResponse<Void> updateCurrentVenue(
             Venue newVenue,
             @RequestParam(value = "coverImage", required = false) MultipartFile newCover) {

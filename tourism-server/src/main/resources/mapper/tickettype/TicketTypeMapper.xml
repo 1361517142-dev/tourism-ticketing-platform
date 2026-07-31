@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.qinghuan.tickettype.TicketTypeMapper">
+    <insert id="insert" useGeneratedKeys="true">
+        insert into ticket_type (venue_id, name, description, audience_rule, base_price, status, created_at, updated_at)
+        values (#{venueId}, #{name}, #{description}, #{audienceRule}, #{basePrice}, #{status}, #{createdAt}, #{updatedAt})
+    </insert>
+    <update id="updateTicketType">
+        update ticket_type
+        set name = #{updateDTO.name},
+            description = #{updateDTO.description},
+            audience_rule = #{updateDTO.audienceRule},
+            base_price = #{updateDTO.basePrice},
+            status = #{updateDTO.status},
+            updated_at = CURRENT_TIMESTAMP
+        where id = #{id}
+          and venue_id = #{venueId}
+    </update>
+    <delete id="deleteBatch">
+        delete from ticket_type where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+
+    <select id="list" resultType="com.qinghuan.pojo.entity.TicketType">
+        select id, name, description, audience_rule, base_price, status, created_at, updated_at
+        from ticket_type
+        where venue_id = #{venueId}
+    </select>
+    <select id="getTicketTypeById" resultType="com.qinghuan.pojo.entity.TicketType">
+        select id, name, description, audience_rule, base_price, status, created_at, updated_at
+        from ticket_type
+        where id = #{id} and venue_id = #{venueId}
+    </select>
+    <select id="getTicketTypesByIds" resultType="com.qinghuan.pojo.entity.TicketType">
+        select id, venue_id, name, description, audience_rule, base_price, status, created_at, updated_at
+        from ticket_type where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+    <select id="getSessionIdsByTicketTypeIds" resultType="java.lang.Long">
+        select session_id from session_ticket_type where ticket_type_id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+</mapper>

@@ -13,5 +13,7 @@ public class SessionTicketType extends BaseEntity {
     private Long sessionId;
     private Long ticketTypeId;
     private BigDecimal salePrice;
+    private Integer allocatedQuantity;
+    private Integer remainingQuantity;
     private SaleStatus status;
 }
