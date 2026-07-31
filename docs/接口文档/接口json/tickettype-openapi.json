@@ -1,0 +1,685 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "票种管理接口",
+    "description": "景点运营者维护当前景点的票种及基础价格，支持事务性批量删除未被场次引用的票种。",
+    "version": "1.1.0"
+  },
+  "tags": [
+    {
+      "name": "TicketType",
+      "description": "运营者端票种管理"
+    }
+  ],
+  "paths": {
+    "/operator/ticket-types": {
+      "get": {
+        "tags": [
+          "TicketType"
+        ],
+        "summary": "分页查询票种",
+        "description": "仅查询当前登录运营者所属景点的票种，支持按名称模糊查询。",
+        "operationId": "pageTicketTypes",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码，从 1 开始",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "每页数量",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "票种名称关键字",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketTypePageApiResponse"
+                },
+                "example": {
+                  "code": "SUCCESS",
+                  "message": "操作成功",
+                  "data": {
+                    "items": [
+                      {
+                        "id": 12,
+                        "name": "学生票",
+                        "description": "面向全日制在校学生",
+                        "audienceRule": "入场时须出示有效学生证",
+                        "basePrice": 30.00,
+                        "status": "ENABLED",
+                        "createdAt": "2026-07-31T10:00:00",
+                        "updatedAt": "2026-07-31T10:00:00"
+                      }
+                    ],
+                    "total": 1,
+                    "page": 1,
+                    "size": 20
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "TicketType"
+        ],
+        "summary": "新建票种",
+        "description": "在当前登录运营者所属景点下创建票种。",
+        "operationId": "createTicketType",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketTypeCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdApiResponse"
+                },
+                "example": {
+                  "code": "SUCCESS",
+                  "message": "操作成功",
+                  "data": 12
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/TicketTypeNameConflict"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "TicketType"
+        ],
+        "summary": "批量删除票种",
+        "description": "批量删除当前景点从未被场次引用的票种。任一票种校验失败时，整批不删除。",
+        "operationId": "deleteTicketTypes",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "description": "待删除的票种 ID，使用英文逗号分隔",
+            "required": true,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 100,
+              "uniqueItems": true,
+              "items": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 1
+              }
+            },
+            "example": [
+              1,
+              2,
+              3
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OperationSucceeded"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/TicketTypeNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/TicketTypeInUse"
+          }
+        }
+      }
+    },
+    "/operator/ticket-types/{ticketTypeId}": {
+      "get": {
+        "tags": [
+          "TicketType"
+        ],
+        "summary": "获取票种详情",
+        "description": "获取当前景点指定票种的完整资料。",
+        "operationId": "getTicketType",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TicketTypeId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketTypeApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/TicketTypeNotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "TicketType"
+        ],
+        "summary": "修改票种",
+        "description": "修改当前景点指定票种的资料和状态，不级联修改已有场次售价。",
+        "operationId": "updateTicketType",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TicketTypeId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketTypeUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OperationSucceeded"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/TicketTypeNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/TicketTypeNameConflict"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "parameters": {
+      "TicketTypeId": {
+        "name": "ticketTypeId",
+        "in": "path",
+        "description": "票种 ID",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1
+        }
+      }
+    },
+    "schemas": {
+      "TicketTypeStatus": {
+        "type": "string",
+        "description": "ENABLED 表示启用，DISABLED 表示停用",
+        "enum": [
+          "ENABLED",
+          "DISABLED"
+        ]
+      },
+      "TicketType": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "basePrice",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 12
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "学生票"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true,
+            "example": "面向全日制在校学生"
+          },
+          "audienceRule": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true,
+            "example": "入场时须出示有效学生证"
+          },
+          "basePrice": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 99999999.99,
+            "multipleOf": 0.01,
+            "example": 30.00
+          },
+          "status": {
+            "$ref": "#/components/schemas/TicketTypeStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TicketTypeCreateRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "basePrice"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "学生票"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true,
+            "example": "面向全日制在校学生"
+          },
+          "audienceRule": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true,
+            "example": "入场时须出示有效学生证"
+          },
+          "basePrice": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 99999999.99,
+            "multipleOf": 0.01,
+            "example": 30.00
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TicketTypeStatus"
+              }
+            ],
+            "default": "ENABLED"
+          }
+        }
+      },
+      "TicketTypeUpdateRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "basePrice",
+          "status"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "学生优惠票"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true,
+            "example": "面向全日制在校学生"
+          },
+          "audienceRule": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true,
+            "example": "入场时须出示本人有效学生证"
+          },
+          "basePrice": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 99999999.99,
+            "multipleOf": 0.01,
+            "example": 25.00
+          },
+          "status": {
+            "$ref": "#/components/schemas/TicketTypeStatus"
+          }
+        }
+      },
+      "TicketTypePage": {
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TicketType"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "TicketTypeApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TicketType"
+          }
+        }
+      },
+      "TicketTypePageApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TicketTypePage"
+          }
+        }
+      },
+      "IdApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "type": "integer",
+            "format": "int64",
+            "example": 12
+          }
+        }
+      },
+      "OperationApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          }
+        }
+      },
+      "ErrorApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "INVALID_REQUEST"
+          },
+          "message": {
+            "type": "string",
+            "example": "请求参数不合法"
+          }
+        }
+      }
+    },
+    "responses": {
+      "OperationSucceeded": {
+        "description": "操作成功",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OperationApiResponse"
+            },
+            "example": {
+              "code": "SUCCESS",
+              "message": "操作成功"
+            }
+          }
+        }
+      },
+      "InvalidRequest": {
+        "description": "请求参数不合法",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "INVALID_REQUEST",
+              "message": "基础价格不能小于 0"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "未登录或 JWT 已失效",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "UNAUTHORIZED",
+              "message": "请先登录"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "当前登录用户不是景点运营者",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "FORBIDDEN",
+              "message": "无权执行该操作"
+            }
+          }
+        }
+      },
+      "TicketTypeNotFound": {
+        "description": "一个或多个票种不存在，或者不属于当前景点",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "NOT_FOUND",
+              "message": "票种不存在"
+            }
+          }
+        }
+      },
+      "TicketTypeNameConflict": {
+        "description": "当前景点已存在同名票种",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "CONFLICT",
+              "message": "当前景点已存在同名票种"
+            }
+          }
+        }
+      },
+      "TicketTypeInUse": {
+        "description": "一个或多个票种已被场次引用，整批不能删除",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "CONFLICT",
+              "message": "所选票种中存在已被场次使用的票种，不能删除"
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ]
+}

@@ -1,0 +1,898 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "场次管理接口",
+    "description": "景点运营者维护当前景点的参观场次、总容量和各票种的固定分配数量，并通过业务事件驱动场次状态流转。",
+    "version": "1.1.0"
+  },
+  "tags": [
+    {
+      "name": "Session",
+      "description": "运营者端场次管理"
+    }
+  ],
+  "paths": {
+    "/operator/sessions": {
+      "get": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "分页查询场次",
+        "description": "分页查询当前登录运营者所属景点的场次，可按参观日期和状态筛选。",
+        "operationId": "pageSessions",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码，从 1 开始",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "每页数量",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "visitDate",
+            "in": "query",
+            "description": "参观日期",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "场次状态",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AdmissionSessionStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionPageApiResponse"
+                },
+                "example": {
+                  "code": "SUCCESS",
+                  "message": "操作成功",
+                  "data": {
+                    "items": [
+                      {
+                        "id": 21,
+                        "visitDate": "2026-08-01",
+                        "startTime": "09:00:00",
+                        "endTime": "11:00:00",
+                        "bookingStartAt": "2026-07-20T09:00:00",
+                        "bookingEndAt": "2026-08-01T08:30:00",
+                        "totalCapacity": 500,
+                        "remainingCapacity": 500,
+                        "status": "DRAFT",
+                        "ticketTypes": [
+                          {
+                            "ticketTypeId": 1,
+                            "ticketTypeName": "成人票",
+                            "salePrice": 50.00,
+                            "allocatedQuantity": 350,
+                            "remainingQuantity": 350,
+                            "status": "ON_SALE"
+                          }
+                        ],
+                        "createdAt": "2026-07-31T09:00:00",
+                        "updatedAt": "2026-07-31T09:00:00"
+                      }
+                    ],
+                    "total": 1,
+                    "page": 1,
+                    "size": 20
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "新建场次",
+        "description": "在当前景点创建 DRAFT 场次，并在同一事务内保存场次票种配置。",
+        "operationId": "createSession",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionWriteRequest"
+              },
+              "example": {
+                "visitDate": "2026-08-01",
+                "startTime": "09:00:00",
+                "endTime": "11:00:00",
+                "bookingStartAt": "2026-07-20T09:00:00",
+                "bookingEndAt": "2026-08-01T08:30:00",
+                "totalCapacity": 500,
+                "ticketTypes": [
+                  {
+                    "ticketTypeId": 1,
+                    "salePrice": 50.00,
+                    "allocatedQuantity": 350
+                  },
+                  {
+                    "ticketTypeId": 2,
+                    "salePrice": 30.00,
+                    "allocatedQuantity": 100
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdApiResponse"
+                },
+                "example": {
+                  "code": "SUCCESS",
+                  "message": "操作成功",
+                  "data": 21
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/SessionConflict"
+          }
+        }
+      }
+    },
+    "/operator/sessions/{sessionId}": {
+      "get": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "获取场次详情",
+        "description": "获取当前景点指定场次及其完整票种配置。",
+        "operationId": "getSession",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SessionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/SessionNotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "修改草稿场次",
+        "description": "修改当前景点 DRAFT 场次，并在同一事务内整组替换票种配置。",
+        "operationId": "updateSession",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SessionId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionWriteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OperationSucceeded"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/SessionNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/SessionConflict"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "删除草稿场次",
+        "description": "仅允许删除没有订单的当前景点 DRAFT 场次，同时删除其票种配置。",
+        "operationId": "deleteSession",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SessionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OperationSucceeded"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/SessionNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/SessionCannotDelete"
+          }
+        }
+      }
+    },
+    "/operator/sessions/{sessionId}/events": {
+      "post": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "触发场次事件",
+        "description": "提交业务事件，后端根据场次当前状态和事件计算下一状态。前端不能直接指定目标状态。",
+        "operationId": "handleSessionEvent",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SessionId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionEventRequest"
+              },
+              "example": {
+                "event": "PUBLISH"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OperationSucceeded"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/SessionNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/InvalidSessionTransition"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "parameters": {
+      "SessionId": {
+        "name": "sessionId",
+        "in": "path",
+        "description": "场次 ID",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1
+        }
+      }
+    },
+    "schemas": {
+      "AdmissionSessionStatus": {
+        "type": "string",
+        "description": "DRAFT 草稿，OPEN 开放预约，CLOSED 停止预约，ENDED 已结束，CANCELLED 已取消",
+        "enum": [
+          "DRAFT",
+          "OPEN",
+          "CLOSED",
+          "ENDED",
+          "CANCELLED"
+        ]
+      },
+      "AdmissionSessionEvent": {
+        "type": "string",
+        "description": "PUBLISH 发布，CLOSE_BOOKING 停止预约，REOPEN_BOOKING 重新开放，CANCEL 取消，SESSION_ENDED 场次结束",
+        "enum": [
+          "PUBLISH",
+          "CLOSE_BOOKING",
+          "REOPEN_BOOKING",
+          "CANCEL",
+          "SESSION_ENDED"
+        ]
+      },
+      "SaleStatus": {
+        "type": "string",
+        "description": "场次票种销售状态",
+        "enum": [
+          "ON_SALE",
+          "OFF_SALE"
+        ]
+      },
+      "SessionTicketTypeConfigRequest": {
+        "type": "object",
+        "required": [
+          "ticketTypeId",
+          "salePrice",
+          "allocatedQuantity"
+        ],
+        "properties": {
+          "ticketTypeId": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "description": "当前景点处于 ENABLED 状态的票种 ID",
+            "example": 1
+          },
+          "salePrice": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 99999999.99,
+            "multipleOf": 0.01,
+            "description": "该场次的实际售价",
+            "example": 50.00
+          },
+          "allocatedQuantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "description": "运营者为该票种分配的可售数量",
+            "example": 350
+          }
+        }
+      },
+      "SessionWriteRequest": {
+        "type": "object",
+        "required": [
+          "visitDate",
+          "startTime",
+          "endTime",
+          "bookingStartAt",
+          "bookingEndAt",
+          "totalCapacity",
+          "ticketTypes"
+        ],
+        "properties": {
+          "visitDate": {
+            "type": "string",
+            "format": "date",
+            "description": "参观日期",
+            "example": "2026-08-01"
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$",
+            "description": "入场开始时间，格式 HH:mm:ss",
+            "example": "09:00:00"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$",
+            "description": "入场结束时间，格式 HH:mm:ss",
+            "example": "11:00:00"
+          },
+          "bookingStartAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "开始预约时间",
+            "example": "2026-07-20T09:00:00"
+          },
+          "bookingEndAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "停止预约时间，不能晚于场次开始时间",
+            "example": "2026-08-01T08:30:00"
+          },
+          "totalCapacity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "description": "场次接待人数硬上限，所有票种分配数量之和不能超过此值",
+            "example": 500
+          },
+          "ticketTypes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "description": "场次票种配置，同一 ticketTypeId 不能重复，allocatedQuantity 之和不能超过 totalCapacity",
+            "items": {
+              "$ref": "#/components/schemas/SessionTicketTypeConfigRequest"
+            }
+          }
+        }
+      },
+      "SessionEventRequest": {
+        "type": "object",
+        "required": [
+          "event"
+        ],
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/AdmissionSessionEvent"
+          }
+        }
+      },
+      "SessionTicketType": {
+        "type": "object",
+        "required": [
+          "ticketTypeId",
+          "ticketTypeName",
+          "salePrice",
+          "allocatedQuantity",
+          "remainingQuantity",
+          "status"
+        ],
+        "properties": {
+          "ticketTypeId": {
+            "type": "integer",
+            "format": "int64",
+            "example": 1
+          },
+          "ticketTypeName": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "成人票"
+          },
+          "salePrice": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 99999999.99,
+            "multipleOf": 0.01,
+            "example": 50.00
+          },
+          "allocatedQuantity": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "运营者为该票种分配的总数量",
+            "example": 350
+          },
+          "remainingQuantity": {
+            "type": "integer",
+            "minimum": 0,
+            "readOnly": true,
+            "description": "该票种在当前场次的剩余可售数量",
+            "example": 350
+          },
+          "status": {
+            "$ref": "#/components/schemas/SaleStatus"
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "required": [
+          "id",
+          "visitDate",
+          "startTime",
+          "endTime",
+          "bookingStartAt",
+          "bookingEndAt",
+          "totalCapacity",
+          "remainingCapacity",
+          "status",
+          "ticketTypes",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 21
+          },
+          "visitDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-08-01"
+          },
+          "startTime": {
+            "type": "string",
+            "example": "09:00:00"
+          },
+          "endTime": {
+            "type": "string",
+            "example": "11:00:00"
+          },
+          "bookingStartAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-20T09:00:00"
+          },
+          "bookingEndAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-01T08:30:00"
+          },
+          "totalCapacity": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 500
+          },
+          "remainingCapacity": {
+            "type": "integer",
+            "minimum": 0,
+            "readOnly": true,
+            "description": "场次全局剩余容量，下单时与票种剩余数量同时扣减",
+            "example": 500
+          },
+          "status": {
+            "$ref": "#/components/schemas/AdmissionSessionStatus"
+          },
+          "ticketTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionTicketType"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SessionPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Session"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "SessionApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Session"
+          }
+        }
+      },
+      "SessionPageApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SessionPage"
+          }
+        }
+      },
+      "IdApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "type": "integer",
+            "format": "int64",
+            "example": 21
+          }
+        }
+      },
+      "OperationApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          }
+        }
+      },
+      "ErrorApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "INVALID_REQUEST"
+          },
+          "message": {
+            "type": "string",
+            "example": "请求参数不合法"
+          }
+        }
+      }
+    },
+    "responses": {
+      "OperationSucceeded": {
+        "description": "操作成功",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OperationApiResponse"
+            },
+            "example": {
+              "code": "SUCCESS",
+              "message": "操作成功"
+            }
+          }
+        }
+      },
+      "InvalidRequest": {
+        "description": "请求参数或时间范围不合法",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "INVALID_REQUEST",
+              "message": "场次开始时间必须早于结束时间"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "未登录或 JWT 已失效",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "UNAUTHORIZED",
+              "message": "请先登录"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "当前登录用户不是景点运营者",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "FORBIDDEN",
+              "message": "无权执行该操作"
+            }
+          }
+        }
+      },
+      "SessionNotFound": {
+        "description": "场次不存在或不属于当前景点",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "NOT_FOUND",
+              "message": "场次不存在"
+            }
+          }
+        }
+      },
+      "SessionConflict": {
+        "description": "场次时间重复、票种无效、配额超出场次容量或场次状态不允许修改",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "examples": {
+              "duplicateTime": {
+                "value": {
+                  "code": "CONFLICT",
+                  "message": "当前景点已存在相同日期和时间段的场次"
+                }
+              },
+              "invalidTicketType": {
+                "value": {
+                  "code": "CONFLICT",
+                  "message": "票种不存在、已停用或不属于当前景点"
+                }
+              },
+              "notDraft": {
+                "value": {
+                  "code": "CONFLICT",
+                  "message": "只有草稿场次可以修改"
+                }
+              }
+            }
+          }
+        }
+      },
+      "InvalidSessionTransition": {
+        "description": "当前状态不支持该事件，或事件的业务前置条件不满足",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "CONFLICT",
+              "message": "当前场次状态不允许执行该操作"
+            }
+          }
+        }
+      },
+      "SessionCannotDelete": {
+        "description": "场次不是草稿或已经产生订单，不能删除",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "CONFLICT",
+              "message": "当前场次不能删除"
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ]
+}

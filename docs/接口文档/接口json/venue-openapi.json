@@ -1,0 +1,330 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "景点信息管理接口",
+    "description": "景点运营者查看和修改自己所属景点的基础展示资料。",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "Venue",
+      "description": "运营者端景点信息"
+    }
+  ],
+  "paths": {
+    "/operator/venue": {
+      "get": {
+        "tags": [
+          "Venue"
+        ],
+        "summary": "获取当前景点信息",
+        "description": "根据当前登录运营者 JWT 中的 venueId 查询所属景点，用于初始化景点信息页面。",
+        "operationId": "getCurrentVenue",
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueApiResponse"
+                },
+                "example": {
+                  "code": "SUCCESS",
+                  "message": "操作成功",
+                  "data": {
+                    "name": "海湾科技馆",
+                    "address": "广州市番禺区海湾大道 88 号",
+                    "description": "面向公众开放的综合性科技文化场馆，提供常设展览与主题活动。",
+                    "coverUrl": "https://example.com/venue-cover.jpg",
+                    "status": "ENABLED"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/VenueNotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Venue"
+        ],
+        "summary": "修改当前景点信息",
+        "description": "保存景点信息页面中的基础展示资料和运营状态。只能修改当前登录运营者所属的景点。",
+        "operationId": "updateCurrentVenue",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/VenueUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "修改成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationApiResponse"
+                },
+                "example": {
+                  "code": "SUCCESS",
+                  "message": "操作成功"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/VenueNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/VenueConflict"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Venue": {
+        "type": "object",
+        "required": [
+          "name",
+          "address",
+          "status"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "景点名称"
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "景点地址"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "景点简介"
+          },
+          "coverUrl": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true,
+            "description": "封面图片地址"
+          },
+          "status": {
+            "$ref": "#/components/schemas/VenueStatus"
+          }
+        }
+      },
+      "VenueUpdateRequest": {
+        "type": "object",
+        "description": "景点信息页面保存的全部字段。未上传 coverImage 时保留原封面。",
+        "required": [
+          "name",
+          "address",
+          "status"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "景点名称",
+            "example": "海湾科技馆"
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "景点地址",
+            "example": "广州市番禺区海湾大道 88 号"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "景点简介",
+            "example": "面向公众开放的综合性科技文化场馆，提供常设展览与主题活动。"
+          },
+          "status": {
+            "$ref": "#/components/schemas/VenueStatus"
+          },
+          "coverImage": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true,
+            "description": "新的景点封面图片；不上传时保留原封面"
+          }
+        }
+      },
+      "VenueStatus": {
+        "type": "string",
+        "description": "运营状态：ENABLED 表示启用，DISABLED 表示停用",
+        "enum": [
+          "ENABLED",
+          "DISABLED"
+        ]
+      },
+      "VenueApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Venue"
+          }
+        }
+      },
+      "OperationApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          }
+        }
+      },
+      "ErrorApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "INVALID_REQUEST"
+          },
+          "message": {
+            "type": "string",
+            "example": "请求参数不合法"
+          }
+        }
+      }
+    },
+    "responses": {
+      "InvalidRequest": {
+        "description": "请求参数不合法",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "INVALID_REQUEST",
+              "message": "景点名称不能为空"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "未登录或 JWT 已失效",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "UNAUTHORIZED",
+              "message": "请先登录"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "当前登录用户不是景点运营者",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "FORBIDDEN",
+              "message": "无权执行该操作"
+            }
+          }
+        }
+      },
+      "VenueNotFound": {
+        "description": "当前运营者未绑定有效景点",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "NOT_FOUND",
+              "message": "景点不存在"
+            }
+          }
+        }
+      },
+      "VenueConflict": {
+        "description": "景点名称和地址与已有景点重复",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "CONFLICT",
+              "message": "相同名称和地址的景点已存在"
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.qinghuan.session.SessionMapper">
+
+    <select id="list" resultType="com.qinghuan.pojo.entity.AdmissionSession">
+        select id, venue_id, visit_date, start_time, end_time,
+               booking_start_at, booking_end_at, total_capacity,
+               remaining_capacity, status, created_at, updated_at
+        from admission_session
+        where venue_id = #{venueId}
+        <if test="query.visitDate != null">
+            and visit_date = #{query.visitDate}
+        </if>
+        <if test="query.status != null">
+            and status = #{query.status}
+        </if>
+        order by visit_date desc, start_time asc
+    </select>
+
+    <select id="findById" resultType="com.qinghuan.pojo.entity.AdmissionSession">
+        select id, venue_id, visit_date, start_time, end_time,
+               booking_start_at, booking_end_at, total_capacity,
+               remaining_capacity, status, created_at, updated_at
+        from admission_session
+        where id = #{id}
+          and venue_id = #{venueId}
+    </select>
+
+    <select id="listTicketTypes" resultType="com.qinghuan.pojo.vo.SessionTicketTypeVO">
+        select stt.ticket_type_id, tt.name as ticket_type_name, stt.sale_price,
+               stt.allocated_quantity, stt.remaining_quantity, stt.status
+        from session_ticket_type stt
+        join ticket_type tt on tt.id = stt.ticket_type_id
+        where stt.session_id = #{sessionId}
+        order by stt.id
+    </select>
+
+    <select id="countEnabledTicketTypes" resultType="int">
+        select count(*)
+        from ticket_type
+        where venue_id = #{venueId}
+          and status = 'ENABLED'
+          and id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+
+    <insert id="insertSession" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        insert into admission_session
+            (venue_id, visit_date, start_time, end_time, booking_start_at,
+             booking_end_at, total_capacity, remaining_capacity, status)
+        values
+            (#{venueId}, #{visitDate}, #{startTime}, #{endTime}, #{bookingStartAt},
+             #{bookingEndAt}, #{totalCapacity}, #{remainingCapacity}, #{status})
+    </insert>
+
+    <insert id="insertSessionTicketTypes">
+        insert into session_ticket_type
+            (session_id, ticket_type_id, sale_price, allocated_quantity,
+             remaining_quantity, status)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.sessionId}, #{item.ticketTypeId}, #{item.salePrice},
+             #{item.allocatedQuantity}, #{item.remainingQuantity}, #{item.status})
+        </foreach>
+    </insert>
+
+    <update id="updateDraftSession">
+        update admission_session
+        set visit_date = #{session.visitDate},
+            start_time = #{session.startTime},
+            end_time = #{session.endTime},
+            booking_start_at = #{session.bookingStartAt},
+            booking_end_at = #{session.bookingEndAt},
+            total_capacity = #{session.totalCapacity},
+            remaining_capacity = #{session.remainingCapacity},
+            updated_at = CURRENT_TIMESTAMP
+        where id = #{session.id}
+          and venue_id = #{venueId}
+          and status = 'DRAFT'
+    </update>
+
+    <select id="isOpenable" resultType="boolean">
+        select case
+                   when sum(case when status = 'ON_SALE' and remaining_quantity > 0 then 1 else 0 end) > 0
+                        and coalesce(sum(allocated_quantity), 0) &lt;= #{totalCapacity}
+                   then 1 else 0
+               end
+        from session_ticket_type
+        where session_id = #{sessionId}
+    </select>
+
+    <select id="countUnresolvedOrders" resultType="int">
+        select count(*)
+        from booking_order
+        where session_id = #{sessionId}
+          and status not in ('CANCELLED', 'CLOSED')
+    </select>
+
+    <update id="updateStatus">
+        update admission_session
+        set status = #{targetStatus},
+            updated_at = CURRENT_TIMESTAMP
+        where id = #{id}
+          and venue_id = #{venueId}
+          and status = #{currentStatus}
+    </update>
+
+    <delete id="deleteSessionTicketTypes">
+        delete from session_ticket_type where session_id = #{sessionId}
+    </delete>
+
+    <select id="countOrders" resultType="int">
+        select count(*) from booking_order where session_id = #{sessionId}
+    </select>
+
+    <delete id="deleteDraftSession">
+        delete from admission_session
+        where id = #{id}
+          and venue_id = #{venueId}
+          and status = 'DRAFT'
+    </delete>
+
+</mapper>
