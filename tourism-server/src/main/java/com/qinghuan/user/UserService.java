@@ -3,9 +3,12 @@ package com.qinghuan.user;
 import com.qinghuan.pojo.dto.StaffAccountUpdateDTO;
 import com.qinghuan.pojo.dto.UserAccountPageQueryDTO;
 import com.qinghuan.pojo.entity.UserAccount;
+import com.qinghuan.pojo.entity.Visitor;
 import com.qinghuan.pojo.enums.AccountStatus;
 import com.qinghuan.pojo.vo.PageResult;
 import com.qinghuan.pojo.vo.UserAccountVO;
+
+import java.util.List;
 
 public interface UserService {
     //保存工作人员账号
@@ -21,4 +24,7 @@ public interface UserService {
 
     /** 修改当前运营者所属景点内的工作人员基本资料。 */
     void updateStaffAccount(Long staffId, StaffAccountUpdateDTO updateDTO);
+
+    // 获取某游客下所有visitor
+    public List<Visitor> getVisitorsByUserId(Long userId);
 }

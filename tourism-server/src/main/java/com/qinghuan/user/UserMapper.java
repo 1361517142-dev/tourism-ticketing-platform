@@ -4,9 +4,12 @@ import com.github.pagehelper.Page;
 import com.qinghuan.pojo.dto.StaffAccountUpdateDTO;
 import com.qinghuan.pojo.dto.UserAccountPageQueryDTO;
 import com.qinghuan.pojo.entity.UserAccount;
+import com.qinghuan.pojo.entity.Visitor;
 import com.qinghuan.pojo.vo.UserAccountVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 @Mapper
 public interface UserMapper {
@@ -26,4 +29,6 @@ public interface UserMapper {
     int updateStaffInfo(@Param("staffId") Long staffId,
                         @Param("venueId") Long venueId,
                         @Param("updateDTO") StaffAccountUpdateDTO updateDTO);
+
+    List<Visitor> getVisitorsByUserId(Long userId);
 }

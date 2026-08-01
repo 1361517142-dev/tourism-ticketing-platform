@@ -89,6 +89,7 @@
                         "status": "DRAFT",
                         "ticketTypes": [
                           {
+                            "sessionTicketTypeId": 301,
                             "ticketTypeId": 1,
                             "ticketTypeName": "成人票",
                             "salePrice": 50.00,
@@ -510,6 +511,7 @@
       "SessionTicketType": {
         "type": "object",
         "required": [
+          "sessionTicketTypeId",
           "ticketTypeId",
           "ticketTypeName",
           "salePrice",
@@ -518,6 +520,12 @@
           "status"
         ],
         "properties": {
+          "sessionTicketTypeId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "场次票种配置 ID，即 session_ticket_type.id；创建订单时使用该 ID",
+            "example": 301
+          },
           "ticketTypeId": {
             "type": "integer",
             "format": "int64",

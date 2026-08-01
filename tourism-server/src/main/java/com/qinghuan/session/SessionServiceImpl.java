@@ -76,6 +76,15 @@ public class SessionServiceImpl implements SessionService {
         return toVO(session);
     }
 
+    @Override
+    public LocalDateTime getSessionStartTime(Long sessionId) {
+        AdmissionSession session = sessionMapper.findByIdForOrder(sessionId);
+        if (session == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "场次不存在");
+        }
+        return LocalDateTime.of(session.getVisitDate(), session.getStartTime());
+    }
+
     /**
      * 草稿没有售票记录，因此允许整组重置票种配置和剩余量。
      */

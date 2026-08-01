@@ -28,14 +28,80 @@
           and venue_id = #{venueId}
     </select>
 
+    <select id="findByIdForOrder" resultType="com.qinghuan.pojo.entity.AdmissionSession">
+        select id, visit_date, start_time
+        from admission_session
+        where id = #{id}
+    </select>
+
     <select id="listTicketTypes" resultType="com.qinghuan.pojo.vo.SessionTicketTypeVO">
-        select stt.ticket_type_id, tt.name as ticket_type_name, stt.sale_price,
+        select stt.id as session_ticket_type_id, stt.ticket_type_id,
+               tt.name as ticket_type_name, stt.sale_price,
                stt.allocated_quantity, stt.remaining_quantity, stt.status
         from session_ticket_type stt
         join ticket_type tt on tt.id = stt.ticket_type_id
         where stt.session_id = #{sessionId}
         order by stt.id
     </select>
+
+    <select id="listOrderableTicketTypes"
+            resultType="com.qinghuan.pojo.vo.SessionTicketTypeVO">
+        select stt.id as session_ticket_type_id, stt.ticket_type_id,
+               tt.name as ticket_type_name, stt.sale_price,
+               stt.allocated_quantity, stt.remaining_quantity, stt.status
+        from admission_session s
+        join session_ticket_type stt on stt.session_id = s.id
+        join ticket_type tt on tt.id = stt.ticket_type_id
+        where s.id = #{sessionId}
+          and s.status = 'OPEN'
+          and s.booking_start_at &lt;= CURRENT_TIMESTAMP
+          and s.booking_end_at &gt; CURRENT_TIMESTAMP
+          and stt.status = 'ON_SALE'
+          and stt.remaining_quantity &gt; 0
+          and stt.id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        order by stt.id
+    </select>
+
+    <update id="deductSessionCapacity">
+        update admission_session
+        set remaining_capacity = remaining_capacity - #{quantity},
+            updated_at = CURRENT_TIMESTAMP
+        where id = #{sessionId}
+          and status = 'OPEN'
+          and booking_start_at &lt;= CURRENT_TIMESTAMP
+          and booking_end_at &gt; CURRENT_TIMESTAMP
+          and remaining_capacity &gt;= #{quantity}
+    </update>
+
+    <update id="deductTicketTypeQuantity">
+        update session_ticket_type
+        set remaining_quantity = remaining_quantity - #{quantity},
+            updated_at = CURRENT_TIMESTAMP
+        where id = #{sessionTicketTypeId}
+          and session_id = #{sessionId}
+          and status = 'ON_SALE'
+          and remaining_quantity &gt;= #{quantity}
+    </update>
+
+    <update id="restoreSessionCapacity">
+        update admission_session
+        set remaining_capacity = remaining_capacity + #{quantity},
+            updated_at = CURRENT_TIMESTAMP
+        where id = #{sessionId}
+          and remaining_capacity + #{quantity} &lt;= total_capacity
+    </update>
+
+    <update id="restoreTicketTypeQuantity">
+        update session_ticket_type
+        set remaining_quantity = remaining_quantity + #{quantity},
+            updated_at = CURRENT_TIMESTAMP
+        where id = #{sessionTicketTypeId}
+          and session_id = #{sessionId}
+          and remaining_quantity + #{quantity} &lt;= allocated_quantity
+    </update>
 
     <select id="countEnabledTicketTypes" resultType="int">
         select count(*)

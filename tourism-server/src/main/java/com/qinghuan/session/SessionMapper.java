@@ -26,10 +26,46 @@ public interface SessionMapper {
     AdmissionSession findById(@Param("id") Long id,
                               @Param("venueId") Long venueId);
 
+    /** 按场次 ID 查询订单业务所需的场次信息，不读取登录账号的景点范围。 */
+    AdmissionSession findByIdForOrder(Long id);
+
     /**
      * 查询场次已配置的票种，并关联返回票种名称。
      */
     List<SessionTicketTypeVO> listTicketTypes(Long sessionId);
+
+    /**
+     * 查询当前仍可预约的场次票种，供订单校验、计价和生成快照。
+     */
+    List<SessionTicketTypeVO> listOrderableTicketTypes(
+            @Param("sessionId") Long sessionId,
+            @Param("ids") List<Long> sessionTicketTypeIds);
+
+    /**
+     * 创建订单时原子扣减场次总容量。
+     */
+    int deductSessionCapacity(@Param("sessionId") Long sessionId,
+                              @Param("quantity") int quantity);
+
+    /**
+     * 创建订单时原子扣减单个场次票种的剩余数量。
+     */
+    int deductTicketTypeQuantity(@Param("sessionId") Long sessionId,
+                                 @Param("sessionTicketTypeId") Long sessionTicketTypeId,
+                                 @Param("quantity") int quantity);
+
+    /**
+     * 订单取消、超时关闭或退款时归还场次总容量。
+     */
+    int restoreSessionCapacity(@Param("sessionId") Long sessionId,
+                               @Param("quantity") int quantity);
+
+    /**
+     * 订单取消、超时关闭或退款时归还场次票种数量。
+     */
+    int restoreTicketTypeQuantity(@Param("sessionId") Long sessionId,
+                                  @Param("sessionTicketTypeId") Long sessionTicketTypeId,
+                                  @Param("quantity") int quantity);
 
     /**
      * 统计当前景点内处于 ENABLED 状态的指定票种数量。

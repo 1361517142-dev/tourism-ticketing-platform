@@ -66,5 +66,8 @@
             </where>
         order by created_at desc
     </select>
+    <select id="getVisitorsByUserId" resultType="com.qinghuan.pojo.entity.Visitor">
+        select id, user_id, name, id_type, id_number, phone, created_at, status from visitor where user_id = #{userId}
+    </select>
 
 </mapper>

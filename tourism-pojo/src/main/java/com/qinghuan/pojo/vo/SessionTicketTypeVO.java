@@ -13,6 +13,8 @@ import java.math.BigDecimal;
 @Setter
 public class SessionTicketTypeVO {
 
+    /** session_ticket_type 关联记录 ID，下单时使用该 ID。 */
+    private Long sessionTicketTypeId;
     private Long ticketTypeId;
     private String ticketTypeName;
     private BigDecimal salePrice;

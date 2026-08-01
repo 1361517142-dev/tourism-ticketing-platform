@@ -10,6 +10,7 @@ import com.qinghuan.common.exception.ErrorCode;
 import com.qinghuan.pojo.dto.StaffAccountUpdateDTO;
 import com.qinghuan.pojo.dto.UserAccountPageQueryDTO;
 import com.qinghuan.pojo.entity.UserAccount;
+import com.qinghuan.pojo.entity.Visitor;
 import com.qinghuan.pojo.enums.AccountRole;
 import com.qinghuan.pojo.enums.AccountStatus;
 import com.qinghuan.pojo.enums.OperationType;
@@ -106,6 +107,11 @@ public class UserServiceImpl implements UserService {
         } catch (DuplicateKeyException exception) {
             throw new BusinessException(ErrorCode.CONFLICT, "手机号已被使用");
         }
+    }
+
+    @Override
+    public List<Visitor> getVisitorsByUserId(Long userId) {
+        return userMapper.getVisitorsByUserId(userId);
     }
 
 }

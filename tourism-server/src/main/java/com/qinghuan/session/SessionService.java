@@ -6,6 +6,8 @@ import com.qinghuan.pojo.enums.SessionEvent;
 import com.qinghuan.pojo.vo.PageResult;
 import com.qinghuan.pojo.vo.SessionVO;
 
+import java.time.LocalDateTime;
+
 public interface SessionService {
 
     /**
@@ -22,6 +24,11 @@ public interface SessionService {
      * 查询当前景点内指定场次的完整信息。
      */
     SessionVO getSession(Long sessionId);
+
+    /**
+     * 返回订单业务校验所需的场次开始时间，不受运营端景点数据范围影响。
+     */
+    LocalDateTime getSessionStartTime(Long sessionId);
 
     /**
      * 修改草稿场次，并整组替换票种售价和配额。
