@@ -22,6 +22,7 @@ import com.qinghuan.session.SessionInventoryService;
 import com.qinghuan.session.SessionService;
 import com.qinghuan.ticket.TicketService;
 import com.qinghuan.visitor.VisitorService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
  * 创建订单时由后端校验参观人和场次票种，并保存不可变的下单快照。
  */
 @Service
+@Slf4j
 public class BookingServiceImpl implements BookingService {
 
     private final BookingMapper bookingMapper;
@@ -96,6 +98,67 @@ public class BookingServiceImpl implements BookingService {
         OrderDetailVO detail = bookingMapper.findVenueOrderDetail(
                 orderId, UserContext.getRequired().venueId());
         return completeOrderDetail(detail, orderId);
+    }
+
+    /**
+     * 模拟支付待支付订单，并在同一事务中生成电子票。
+     * 订单状态条件更新成功后，本事务才拥有后续生成票券的执行权。
+     */
+    @Override
+    @Transactional
+    public boolean payOrder(Long orderId) {
+        BookingOrder order = bookingMapper.findOrderByOrderId(orderId);
+        if (order == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "订单不存在");
+        }
+        if (!order.getUserId().equals(UserContext.getRequired().userId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权访问该订单");
+        }
+
+        BookingOrderStatus oldStatus = order.getStatus();
+        BookingOrderStatus paidStatus;
+        try {
+            paidStatus = oldStatus.next(BookingOrderEvent.PAY_SUCCESS);
+        } catch (IllegalStateException exception) {
+            throw new BusinessException(ErrorCode.CONFLICT, "只有待支付订单可以支付");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (!now.isBefore(order.getExpireAt())) {
+            closeExpiredOrder(order, oldStatus, now);
+            // 不在事务中抛异常，确保关闭订单和归还库存能够正常提交。
+            return false;
+        }
+
+        order.setPaymentNo(UUID.randomUUID().toString().replace("-", ""));
+        order.setPaidAt(now);
+        order.setStatus(paidStatus);
+        int updated = bookingMapper.updatePaidOrder(order, oldStatus);
+        if (updated == 0) {
+            throw new BusinessException(ErrorCode.CONFLICT, "订单状态或支付期限发生变化");
+        }
+
+        // 票券与支付状态在同一事务中落库，任一失败都会整体回滚。
+        ticketService.createTicketsForOrder(orderId, order.getQuantity());
+        return true;
+    }
+
+    /** 关闭支付时已经超时的订单，并归还创建订单时预占的库存。 */
+    private void closeExpiredOrder(BookingOrder order,
+                                   BookingOrderStatus oldStatus,
+                                   LocalDateTime closedAt) {
+        order.setClosedAt(closedAt);
+        order.setStatus(oldStatus.next(BookingOrderEvent.PAYMENT_TIMEOUT));
+        if (bookingMapper.updateOrder(order, oldStatus) == 0) {
+            throw new BusinessException(ErrorCode.CONFLICT, "订单状态发生变化");
+        }
+
+        Map<Long, Integer> ticketTypeQuantities = bookingMapper.listOrderItems(order.getId())
+                .stream()
+                .collect(Collectors.groupingBy(
+                        OrderItemVO::getSessionTicketTypeId,
+                        Collectors.summingInt(item -> 1)));
+        sessionInventoryService.releaseInventory(order.getSessionId(), ticketTypeQuantities);
     }
 
     /** 整单退款 */
@@ -165,6 +228,70 @@ public class BookingServiceImpl implements BookingService {
         // 释放库存
         sessionInventoryService.releaseInventory(order.getSessionId(), ticketTypeQuantities);
 
+    }
+
+    @Override
+    @Transactional
+    public void cancelOrder(Long orderId) {
+        // 获取订单信息
+        BookingOrder order = bookingMapper.findOrderByOrderId(orderId);
+        if (order == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "订单不存在");
+        }
+        // 判断是否有权限
+        if (!order.getUserId().equals(UserContext.getRequired().userId())) {
+            throw new BusinessException(
+                    ErrorCode.FORBIDDEN, "无权访问该订单");
+        }
+        // 状态转换
+        BookingOrderStatus oldStatus = order.getStatus();
+        BookingOrderStatus newStatus;
+        try {
+            newStatus = oldStatus.next(BookingOrderEvent.USER_CANCEL);
+        } catch (IllegalStateException exception) {
+            // 用户取消只适用于仍处于待支付状态的订单。
+            throw new BusinessException(ErrorCode.CONFLICT, "只有待支付订单可以取消");
+        }
+        // 更新订单信息
+        order.setCancelledAt(LocalDateTime.now());
+        order.setStatus(newStatus);
+        Integer okNumber = bookingMapper.updateOrder(order, oldStatus);
+        if (okNumber == 0) {
+            throw new BusinessException(
+                    ErrorCode.CONFLICT, "订单状态发生变化");
+        }
+
+        // 获取订单详情
+        List<OrderItemVO> items = bookingMapper.listOrderItems(orderId);
+
+        // 归还场次容量和sessionTicketType容量
+        sessionInventoryService.releaseInventory(order.getSessionId(),  items.stream().collect(Collectors.groupingBy(OrderItemVO::getSessionTicketTypeId, Collectors.summingInt(item -> 1))));
+    }
+
+    @Override
+    @Transactional
+    public void cancelTimeoutOrder(Long id) {
+        BookingOrder order = bookingMapper.findOrderByOrderId(id);
+        // PAYMENT_TIMEOUT 对应 CLOSED，记录超时关闭时间而不是用户取消时间。
+        order.setClosedAt(LocalDateTime.now());
+        BookingOrderStatus oldStatus = order.getStatus();
+        order.setStatus(oldStatus.next(BookingOrderEvent.PAYMENT_TIMEOUT));
+        Integer okNumber = bookingMapper.updateOrder(order, oldStatus);
+        if (okNumber == 0) {
+            throw new BusinessException(
+                    ErrorCode.CONFLICT, "超时订单取消失败");
+        }
+
+        // 获取订单详情
+        List<OrderItemVO> items = bookingMapper.listOrderItems(order.getId());
+        // 释放库存
+        sessionInventoryService.releaseInventory(order.getSessionId(), items.stream().collect(Collectors.groupingBy(OrderItemVO::getSessionTicketTypeId, Collectors.summingInt(item -> 1))));
+
+    }
+
+    @Override
+    public List<BookingOrder> listTimeoutOrders() {
+        return bookingMapper.listTimeoutOrders(LocalDateTime.now());
     }
 
 

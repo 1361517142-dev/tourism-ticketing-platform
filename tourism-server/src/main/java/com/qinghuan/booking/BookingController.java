@@ -1,6 +1,8 @@
 package com.qinghuan.booking;
 
 import com.qinghuan.annotation.RequireRole;
+import com.qinghuan.common.exception.BusinessException;
+import com.qinghuan.common.exception.ErrorCode;
 import com.qinghuan.common.response.ApiResponse;
 import com.qinghuan.pojo.dto.OrderCreateDTO;
 import com.qinghuan.pojo.dto.OrderPageQueryDTO;
@@ -65,6 +67,20 @@ public class BookingController {
         return ApiResponse.success(bookingService.getMyOrder(orderId));
     }
 
+    /** MVP 阶段使用后端模拟支付，支付成功后直接生成电子票。 */
+    @PostMapping("/tourist/orders/{orderId}/pay")
+    @RequireRole(AccountRole.TOURIST)
+    @Operation(summary = "支付订单")
+    public ApiResponse<Void> payOrder(
+            @PathVariable @Positive(message = "订单ID必须为正数") Long orderId) {
+        boolean paid = bookingService.payOrder(orderId);
+        if (!paid) {
+            // Service 已提交超时关闭事务，此处只负责转换成接口冲突响应。
+            throw new BusinessException(ErrorCode.CONFLICT, "订单已超时，无法支付");
+        }
+        return ApiResponse.success();
+    }
+
     /** 运营者和工作人员按当前景点范围分页查询订单。 */
     @GetMapping("/operator/orders")
     @RequireRole({AccountRole.OPERATOR, AccountRole.STAFF})
@@ -92,6 +108,18 @@ public class BookingController {
     public ApiResponse<Void> refundOrder(
             @PathVariable @Positive(message = "订单ID必须为正数") Long orderId) {
         bookingService.refundOrder(orderId);
+        return ApiResponse.success();
+    }
+
+    /*
+     * 取消支付订单
+     */
+    @PostMapping("/tourist/orders/{orderId}/cancel")
+    @RequireRole(AccountRole.TOURIST)
+    @Operation(summary = "取消支付订单")
+    public ApiResponse<Void> cancelOrder(
+            @PathVariable @Positive(message = "订单ID必须为正数") Long orderId) {
+        bookingService.cancelOrder(orderId);
         return ApiResponse.success();
     }
 }

@@ -53,6 +53,17 @@
         and status = #{oldStatus}
     </update>
 
+    <!-- 状态与支付期限一并放进更新条件，由数据库裁决支付、取消和超时任务的竞争。 -->
+    <update id="updatePaidOrder">
+        update booking_order
+        set status = #{order.status},
+            payment_no = #{order.paymentNo},
+            paid_at = #{order.paidAt}
+        where id = #{order.id}
+          and status = #{oldStatus}
+          and expire_at &gt; #{order.paidAt}
+    </update>
+
     <!-- 显式声明摘要字段映射，避免查询结果依赖全局下划线转驼峰配置。 -->
     <resultMap id="orderSummaryResultMap" type="com.qinghuan.pojo.vo.OrderSummaryVO">
         <id property="id" column="id"/>
@@ -184,6 +195,12 @@
     </select>
     <select id="findOrderByOrderId" resultType="com.qinghuan.pojo.entity.BookingOrder">
         select * from booking_order where id = #{id}
+    </select>
+    <select id="listTimeoutOrders" resultType="com.qinghuan.pojo.entity.BookingOrder">
+        select *
+        from booking_order
+        where status = 'PENDING_PAYMENT'
+          and expire_at <![CDATA[<=]]> #{timeout}
     </select>
 
     <!-- 数据库负责审计时间，useGeneratedKeys 将自增订单 ID 回填到实体。 -->

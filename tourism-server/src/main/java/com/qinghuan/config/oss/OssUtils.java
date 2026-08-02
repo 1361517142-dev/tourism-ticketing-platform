@@ -65,6 +65,20 @@ public class OssUtils {
         }
     }
 
+    /**
+     * 将数据库保存的 objectKey 转换成公共读地址。
+     * 当前 MVP 按阿里云 OSS 标准域名拼接，适用于公开读 Bucket。
+     */
+    public String getPublicUrl(String objectKey) {
+        if (!StringUtils.hasText(objectKey)) {
+            return null;
+        }
+        String endpoint = properties.getEndpoint().replaceAll("/+$", "");
+        String bucketEndpoint = endpoint.replace(
+                "://", "://" + properties.getBucketName() + ".");
+        return bucketEndpoint + "/" + objectKey.replaceAll("^/+", "");
+    }
+
     private String buildObjectKey(String directory, String originalFilename) {
         String normalizedDirectory = normalizeDirectory(directory);
         String datePath = LocalDate.now().format(DATE_PATH_FORMATTER);

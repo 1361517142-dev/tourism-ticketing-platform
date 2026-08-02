@@ -10,6 +10,7 @@ import com.qinghuan.pojo.vo.OrderSummaryVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -48,4 +49,11 @@ public interface BookingMapper {
 
     Integer updateOrder(@Param("order") BookingOrder order,
                         @Param("oldStatus") BookingOrderStatus oldStatus);
+
+    /** 仅在订单仍待支付且未超时时完成支付状态更新。 */
+    int updatePaidOrder(@Param("order") BookingOrder order,
+                        @Param("oldStatus") BookingOrderStatus oldStatus);
+
+    // 列出所有超时订单
+    List<BookingOrder> listTimeoutOrders(LocalDateTime timeout);
 }
