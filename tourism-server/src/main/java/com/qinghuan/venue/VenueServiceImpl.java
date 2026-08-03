@@ -1,10 +1,12 @@
 package com.qinghuan.venue;
 
 import com.qinghuan.auth.context.UserContext;
+import com.qinghuan.common.constant.cacheKeys.VenueConstant;
 import com.qinghuan.common.exception.BusinessException;
 import com.qinghuan.common.exception.ErrorCode;
 import com.qinghuan.config.oss.OssUtils;
 import com.qinghuan.pojo.entity.Venue;
+import com.qinghuan.redis.CacheClient;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -14,10 +16,12 @@ import org.springframework.web.multipart.MultipartFile;
 public class VenueServiceImpl implements VenueService {
     private final VenueMapper venueMapper;
     private final OssUtils ossUtils;
+    private final CacheClient cacheClient;
 
-    public VenueServiceImpl(VenueMapper venueMapper, OssUtils ossUtils) {
+    public VenueServiceImpl(VenueMapper venueMapper, OssUtils ossUtils, CacheClient cacheClient) {
         this.venueMapper = venueMapper;
         this.ossUtils = ossUtils;
+        this.cacheClient = cacheClient;
     }
 
     public Venue getCurrentVenue() {
@@ -49,6 +53,7 @@ public class VenueServiceImpl implements VenueService {
             if (updatedRows == 0) {
                 throw new BusinessException(ErrorCode.NOT_FOUND, "景点不存在");
             }
+            cacheClient.delete(VenueConstant.VENUE_DETAIL_PREFIX + venueId);
         } catch (DuplicateKeyException exception) {
             ossUtils.delete(uploadedObjectKey);
             throw new BusinessException(ErrorCode.CONFLICT, "相同名称和地址的景点已存在");
