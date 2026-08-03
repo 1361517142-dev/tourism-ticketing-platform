@@ -1,0 +1,535 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "参观人管理接口",
+    "version": "1.0.0",
+    "description": "游客维护本人账号下参观人的 MVP 接口。"
+  },
+  "tags": [
+    {
+      "name": "Visitor",
+      "description": "参观人管理"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/tourist/visitors": {
+      "get": {
+        "tags": [
+          "Visitor"
+        ],
+        "summary": "查询参观人列表",
+        "description": "查询当前游客名下的参观人；不传状态时返回全部。MVP 阶段不分页。",
+        "operationId": "listVisitors",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "参观人状态",
+            "schema": {
+              "$ref": "#/components/schemas/VisitorStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitorListApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Visitor"
+        ],
+        "summary": "新建参观人",
+        "description": "为当前游客新建参观人，状态默认为 ACTIVE。",
+        "operationId": "createVisitor",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitorCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/VisitorConflict"
+          }
+        }
+      }
+    },
+    "/tourist/visitors/{visitorId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/VisitorId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Visitor"
+        ],
+        "summary": "获取参观人详情",
+        "description": "获取当前游客名下指定参观人的信息，证件号码仅返回脱敏值。",
+        "operationId": "getVisitor",
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitorApiResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/VisitorNotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Visitor"
+        ],
+        "summary": "修改参观人信息",
+        "description": "修改姓名和手机号。证件类型及证件号码创建后不通过此接口修改。",
+        "operationId": "updateVisitor",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitorUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OperationSucceeded"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/VisitorNotFound"
+          }
+        }
+      }
+    },
+    "/tourist/visitors/{visitorId}/status": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/VisitorId"
+        }
+      ],
+      "patch": {
+        "tags": [
+          "Visitor"
+        ],
+        "summary": "修改参观人状态",
+        "description": "启用或停用当前游客名下的参观人；停用不会影响历史订单。",
+        "operationId": "updateVisitorStatus",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitorStatusUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OperationSucceeded"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/VisitorNotFound"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "parameters": {
+      "VisitorId": {
+        "name": "visitorId",
+        "in": "path",
+        "required": true,
+        "description": "参观人 ID",
+        "schema": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1
+        }
+      }
+    },
+    "schemas": {
+      "VisitorStatus": {
+        "type": "string",
+        "description": "ACTIVE 为启用，DISABLED 为停用。",
+        "enum": [
+          "ACTIVE",
+          "DISABLED"
+        ]
+      },
+      "VisitorCreateRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "idType",
+          "idNumber"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "参观人姓名",
+            "maxLength": 50,
+            "example": "张三"
+          },
+          "idType": {
+            "type": "string",
+            "description": "证件类型，例如身份证。具体枚举由业务统一约定。",
+            "maxLength": 20,
+            "example": "ID_CARD"
+          },
+          "idNumber": {
+            "type": "string",
+            "description": "证件号码明文，仅用于提交，不在响应中原样返回。",
+            "maxLength": 64,
+            "example": "440101199001011234"
+          },
+          "phone": {
+            "type": "string",
+            "description": "手机号，可选",
+            "maxLength": 20,
+            "pattern": "^1\\d{10}$",
+            "nullable": true,
+            "example": "13800138000"
+          }
+        }
+      },
+      "VisitorUpdateRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "参观人姓名",
+            "maxLength": 50,
+            "example": "张三"
+          },
+          "phone": {
+            "type": "string",
+            "description": "手机号，可为 null，表示清空手机号。",
+            "maxLength": 20,
+            "pattern": "^1\\d{10}$",
+            "nullable": true,
+            "example": "13900139000"
+          }
+        }
+      },
+      "VisitorStatusUpdateRequest": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/VisitorStatus"
+          }
+        }
+      },
+      "VisitorVO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "张三"
+          },
+          "idType": {
+            "type": "string",
+            "example": "ID_CARD"
+          },
+          "maskedIdNumber": {
+            "type": "string",
+            "description": "脱敏后的证件号码",
+            "example": "440***********1234"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "example": "13800138000"
+          },
+          "status": {
+            "$ref": "#/components/schemas/VisitorStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-01T10:00:00"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-01T10:00:00"
+          }
+        }
+      },
+      "VisitorListApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VisitorVO"
+            }
+          }
+        }
+      },
+      "VisitorApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/VisitorVO"
+          }
+        }
+      },
+      "IdApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "创建成功"
+          },
+          "data": {
+            "type": "integer",
+            "format": "int64",
+            "description": "新建参观人 ID",
+            "example": 1
+          }
+        }
+      },
+      "OperationApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "type": "object",
+            "nullable": true,
+            "example": null
+          }
+        }
+      },
+      "ErrorApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "INVALID_REQUEST"
+          },
+          "message": {
+            "type": "string",
+            "example": "请求参数错误"
+          },
+          "data": {
+            "type": "object",
+            "nullable": true,
+            "example": null
+          }
+        }
+      }
+    },
+    "responses": {
+      "OperationSucceeded": {
+        "description": "操作成功",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OperationApiResponse"
+            }
+          }
+        }
+      },
+      "InvalidRequest": {
+        "description": "请求参数不合法",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "未登录或 JWT 无效",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "当前账号无游客端访问权限",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            }
+          }
+        }
+      },
+      "VisitorNotFound": {
+        "description": "参观人不存在或不属于当前游客",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            }
+          }
+        }
+      },
+      "VisitorConflict": {
+        "description": "当前游客已存在相同证件类型和证件号码的参观人",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}

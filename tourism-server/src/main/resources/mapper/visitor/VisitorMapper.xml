@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.qinghuan.visitor.VisitorMapper">
+
+    <select id="list" resultType="com.qinghuan.pojo.entity.Visitor">
+        select id, user_id, name, id_type, id_number, phone,
+               status, created_at, updated_at
+        from visitor
+        where user_id = #{userId}
+        <if test="status != null">
+            and status = #{status}
+        </if>
+        order by created_at desc, id desc
+    </select>
+
+    <select id="findById" resultType="com.qinghuan.pojo.entity.Visitor">
+        select id, user_id, name, id_type, id_number, phone,
+               status, created_at, updated_at
+        from visitor
+        where id = #{id}
+          and user_id = #{userId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        insert into visitor (user_id, name, id_type, id_number, phone, status)
+        values (#{userId}, #{name}, #{idType}, #{idNumber}, #{phone}, #{status})
+    </insert>
+
+    <update id="update">
+        update visitor
+        set name = #{updateDTO.name},
+            phone = #{updateDTO.phone},
+            updated_at = CURRENT_TIMESTAMP
+        where id = #{id}
+          and user_id = #{userId}
+    </update>
+
+    <update id="updateStatus">
+        update visitor
+        set status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        where id = #{id}
+          and user_id = #{userId}
+    </update>
+
+</mapper>
+

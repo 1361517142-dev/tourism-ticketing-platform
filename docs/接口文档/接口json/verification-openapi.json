@@ -1,0 +1,617 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "票券核销接口",
+    "description": "运营者或工作人员提交票券核销请求，运营者分页查询当前景点核销记录。",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "Verification",
+      "description": "票券核销与核销记录"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/operator/verifications": {
+      "post": {
+        "tags": [
+          "Verification"
+        ],
+        "summary": "提交核销请求",
+        "description": "运营者或工作人员按票码核销当前景点票券。已知票券的业务失败仍返回 HTTP 200，并通过 data.result 表示结果。",
+        "operationId": "verifyTicket",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationRequest"
+              },
+              "example": {
+                "requestNo": "VR-20260803-000001",
+                "ticketCode": "TK-A8F29X2",
+                "deviceNo": "GATE-01"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "核销请求已处理，业务结果可能为 SUCCESS 或 FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationApiResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "核销成功",
+                    "value": {
+                      "code": "SUCCESS",
+                      "message": "操作成功",
+                      "data": {
+                        "requestNo": "VR-20260803-000001",
+                        "result": "SUCCESS",
+                        "verifiedAt": "2026-08-03T09:15:20",
+                        "ticket": {
+                          "id": 701,
+                          "ticketCode": "TK-A8F29X2",
+                          "status": "USED",
+                          "venueName": "海湾科技馆",
+                          "visitorName": "张三",
+                          "ticketTypeName": "成人票",
+                          "visitDate": "2026-08-03",
+                          "startTime": "09:00:00",
+                          "endTime": "11:00:00"
+                        }
+                      }
+                    }
+                  },
+                  "failed": {
+                    "summary": "票券业务校验失败",
+                    "value": {
+                      "code": "SUCCESS",
+                      "message": "操作成功",
+                      "data": {
+                        "requestNo": "VR-20260803-000002",
+                        "result": "FAILED",
+                        "failureReason": "票券已核销",
+                        "verifiedAt": "2026-08-03T09:18:10",
+                        "ticket": {
+                          "id": 701,
+                          "ticketCode": "TK-A8F29X2",
+                          "status": "USED",
+                          "venueName": "海湾科技馆",
+                          "visitorName": "张三",
+                          "ticketTypeName": "成人票",
+                          "visitDate": "2026-08-03",
+                          "startTime": "09:00:00",
+                          "endTime": "11:00:00"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/TicketNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/RequestNoConflict"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Verification"
+        ],
+        "summary": "分页查询核销记录",
+        "description": "运营者分页查询当前景点的核销记录，可按票码、结果和核销日期筛选。工作人员不能访问。",
+        "operationId": "pageVerificationRecords",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Size"
+          },
+          {
+            "$ref": "#/components/parameters/TicketCodeQuery"
+          },
+          {
+            "$ref": "#/components/parameters/VerificationResultQuery"
+          },
+          {
+            "$ref": "#/components/parameters/VerificationDateQuery"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationRecordPageApiResponse"
+                },
+                "example": {
+                  "code": "SUCCESS",
+                  "message": "操作成功",
+                  "data": {
+                    "items": [
+                      {
+                        "id": 801,
+                        "requestNo": "VR-20260803-000002",
+                        "verifiedAt": "2026-08-03T09:18:10",
+                        "ticketCode": "TK-B11A8K0",
+                        "visitorName": "陈晓",
+                        "ticketTypeName": "成人票",
+                        "verifierId": 31,
+                        "verifierName": "检票员01",
+                        "result": "FAILED",
+                        "failureReason": "票券已核销",
+                        "deviceNo": "GATE-01"
+                      }
+                    ],
+                    "total": 1,
+                    "page": 1,
+                    "size": 20
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/OperatorOnly"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "parameters": {
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "description": "页码，从 1 开始",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "Size": {
+        "name": "size",
+        "in": "query",
+        "required": false,
+        "description": "每页数量",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      },
+      "TicketCodeQuery": {
+        "name": "ticketCode",
+        "in": "query",
+        "required": false,
+        "description": "按票码精确查询",
+        "schema": {
+          "type": "string",
+          "maxLength": 64
+        }
+      },
+      "VerificationResultQuery": {
+        "name": "result",
+        "in": "query",
+        "required": false,
+        "description": "核销结果",
+        "schema": {
+          "$ref": "#/components/schemas/VerificationResult"
+        }
+      },
+      "VerificationDateQuery": {
+        "name": "verificationDate",
+        "in": "query",
+        "required": false,
+        "description": "核销日期",
+        "schema": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "schemas": {
+      "VerificationRequest": {
+        "type": "object",
+        "required": [
+          "requestNo",
+          "ticketCode"
+        ],
+        "properties": {
+          "requestNo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "调用端为本次核销生成的幂等请求号"
+          },
+          "ticketCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "扫描或输入的唯一票码"
+          },
+          "deviceNo": {
+            "type": "string",
+            "maxLength": 64,
+            "nullable": true,
+            "description": "模拟闸机或核销终端编号"
+          }
+        }
+      },
+      "VerificationResult": {
+        "type": "string",
+        "enum": [
+          "SUCCESS",
+          "FAILED"
+        ]
+      },
+      "TicketStatus": {
+        "type": "string",
+        "enum": [
+          "VALID",
+          "USED",
+          "VOID",
+          "EXPIRED"
+        ]
+      },
+      "VerificationTicket": {
+        "type": "object",
+        "required": [
+          "id",
+          "ticketCode",
+          "status",
+          "venueName",
+          "visitorName",
+          "ticketTypeName",
+          "visitDate",
+          "startTime",
+          "endTime"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ticketCode": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TicketStatus"
+          },
+          "venueName": {
+            "type": "string"
+          },
+          "visitorName": {
+            "type": "string"
+          },
+          "ticketTypeName": {
+            "type": "string"
+          },
+          "visitDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "time"
+          }
+        }
+      },
+      "VerificationResponse": {
+        "type": "object",
+        "required": [
+          "requestNo",
+          "result",
+          "verifiedAt",
+          "ticket"
+        ],
+        "properties": {
+          "requestNo": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/VerificationResult"
+          },
+          "failureReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "失败时返回，成功时为空"
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "本次核销请求处理时间"
+          },
+          "ticket": {
+            "$ref": "#/components/schemas/VerificationTicket"
+          }
+        }
+      },
+      "VerificationRecordItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "requestNo",
+          "verifiedAt",
+          "ticketCode",
+          "visitorName",
+          "ticketTypeName",
+          "verifierId",
+          "verifierName",
+          "result"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "requestNo": {
+            "type": "string"
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ticketCode": {
+            "type": "string"
+          },
+          "visitorName": {
+            "type": "string"
+          },
+          "ticketTypeName": {
+            "type": "string"
+          },
+          "verifierId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "verifierName": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/VerificationResult"
+          },
+          "failureReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "deviceNo": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "VerificationRecordPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerificationRecordItem"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "ApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          }
+        }
+      },
+      "VerificationApiResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "required": [
+              "data"
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/VerificationResponse"
+              }
+            }
+          }
+        ]
+      },
+      "VerificationRecordPageApiResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "required": [
+              "data"
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/VerificationRecordPage"
+              }
+            }
+          }
+        ]
+      },
+      "ErrorApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "INVALID_REQUEST"
+          },
+          "message": {
+            "type": "string",
+            "example": "请求参数不合法"
+          }
+        }
+      }
+    },
+    "responses": {
+      "InvalidRequest": {
+        "description": "请求体、分页或筛选参数不合法",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "INVALID_REQUEST",
+              "message": "票码不能为空"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "未登录或 JWT 已失效",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "UNAUTHORIZED",
+              "message": "请先登录"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "当前账号不是运营者或工作人员",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "FORBIDDEN",
+              "message": "无权执行该操作"
+            }
+          }
+        }
+      },
+      "OperatorOnly": {
+        "description": "核销记录查询只允许景点运营者访问",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "FORBIDDEN",
+              "message": "无权执行该操作"
+            }
+          }
+        }
+      },
+      "TicketNotFound": {
+        "description": "票码不存在或票券不属于当前景点",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "NOT_FOUND",
+              "message": "票券不存在"
+            }
+          }
+        }
+      },
+      "RequestNoConflict": {
+        "description": "同一个 requestNo 被用于不同票券",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "CONFLICT",
+              "message": "核销请求号已被使用"
+            }
+          }
+        }
+      }
+    }
+  }
+}

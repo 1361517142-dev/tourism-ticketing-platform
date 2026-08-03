@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.qinghuan.catalog.CatalogMapper">
+
+    <!-- 一行场次可对应多行票种，resultMap 会按场次 ID 聚合为嵌套列表。 -->
+    <resultMap id="sellableSessionResultMap"
+               type="com.qinghuan.pojo.vo.SellableSessionVO">
+        <id property="id" column="session_id"/>
+        <result property="visitDate" column="visit_date"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="bookingEndAt" column="booking_end_at"/>
+        <result property="remainingCapacity" column="remaining_capacity"/>
+        <collection property="ticketTypes"
+                    ofType="com.qinghuan.pojo.vo.SellableTicketTypeVO">
+            <id property="sessionTicketTypeId" column="session_ticket_type_id"/>
+            <result property="ticketTypeName" column="ticket_type_name"/>
+            <result property="description" column="ticket_type_description"/>
+            <result property="audienceRule" column="audience_rule"/>
+            <result property="salePrice" column="sale_price"/>
+            <result property="remainingQuantity" column="remaining_quantity"/>
+        </collection>
+    </resultMap>
+
+    <!-- 最低价只统计当前真正可下单的场次票种。 -->
+    <select id="listSellableVenues" resultType="com.qinghuan.pojo.vo.CatalogVenueVO">
+        select v.id, v.name, v.address, v.description,
+               v.cover_object_key as cover_url,
+               min(stt.sale_price) as minimum_price
+        from venue v
+        join admission_session s on s.venue_id = v.id
+        join session_ticket_type stt on stt.session_id = s.id
+        join ticket_type tt on tt.id = stt.ticket_type_id
+        where v.status = 'ENABLED'
+          and s.status = 'OPEN'
+          and s.booking_start_at &lt;= CURRENT_TIMESTAMP
+          and s.booking_end_at &gt; CURRENT_TIMESTAMP
+          and s.remaining_capacity &gt; 0
+          and stt.status = 'ON_SALE'
+          and stt.remaining_quantity &gt; 0
+          and tt.status = 'ENABLED'
+        <if test="keyword != null and keyword != ''">
+            and (v.name like concat('%', #{keyword}, '%')
+                 or v.address like concat('%', #{keyword}, '%'))
+        </if>
+        group by v.id, v.name, v.address, v.description, v.cover_object_key
+        order by min(s.visit_date), v.id
+    </select>
+
+    <select id="findEnabledVenue" resultType="com.qinghuan.pojo.vo.CatalogVenueVO">
+        select id, name, address, description, cover_object_key as cover_url
+        from venue
+        where id = #{venueId}
+          and status = 'ENABLED'
+    </select>
+
+    <select id="listSellableSessions" resultMap="sellableSessionResultMap">
+        select s.id as session_id, s.visit_date, s.start_time, s.end_time,
+               s.booking_end_at, s.remaining_capacity,
+               stt.id as session_ticket_type_id,
+               tt.name as ticket_type_name,
+               tt.description as ticket_type_description,
+               tt.audience_rule,
+               stt.sale_price, stt.remaining_quantity
+        from admission_session s
+        join venue v on v.id = s.venue_id
+        join session_ticket_type stt on stt.session_id = s.id
+        join ticket_type tt on tt.id = stt.ticket_type_id
+        where s.venue_id = #{venueId}
+          and s.visit_date = #{visitDate}
+          and v.status = 'ENABLED'
+          and s.status = 'OPEN'
+          and s.booking_start_at &lt;= CURRENT_TIMESTAMP
+          and s.booking_end_at &gt; CURRENT_TIMESTAMP
+          and s.remaining_capacity &gt; 0
+          and stt.status = 'ON_SALE'
+          and stt.remaining_quantity &gt; 0
+          and tt.status = 'ENABLED'
+        order by s.start_time, stt.id
+    </select>
+
+</mapper>

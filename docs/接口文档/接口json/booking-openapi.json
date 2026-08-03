@@ -1,0 +1,1057 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "订单管理接口",
+    "description": "游客端下单、查询、模拟支付、取消和退款，以及运营端订单查询的 MVP 接口。",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "TouristOrder",
+      "description": "游客端订单管理"
+    },
+    {
+      "name": "OperatorOrder",
+      "description": "运营端订单查询"
+    }
+  ],
+  "paths": {
+    "/tourist/orders": {
+      "post": {
+        "tags": [
+          "TouristOrder"
+        ],
+        "summary": "创建订单",
+        "description": "为当前游客创建订单并立即预占场次及票种库存。价格、快照和初始状态由后端生成。",
+        "operationId": "createOrder",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderCreateRequest"
+              },
+              "example": {
+                "sessionId": 21,
+                "items": [
+                  {
+                    "visitorId": 101,
+                    "sessionTicketTypeId": 301
+                  },
+                  {
+                    "visitorId": 102,
+                    "sessionTicketTypeId": 302
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderCreatedApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/OrderConflict"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "TouristOrder"
+        ],
+        "summary": "分页查询我的订单",
+        "description": "分页查询当前游客自己的订单，可按订单状态筛选。",
+        "operationId": "pageMyOrders",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Size"
+          },
+          {
+            "$ref": "#/components/parameters/OrderStatus"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OrderPageSucceeded"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/tourist/orders/{orderId}": {
+      "get": {
+        "tags": [
+          "TouristOrder"
+        ],
+        "summary": "获取我的订单详情",
+        "description": "获取当前游客自己的订单头、场次、明细和票券信息。",
+        "operationId": "getMyOrder",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrderId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OrderDetailSucceeded"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/OrderNotFound"
+          }
+        }
+      }
+    },
+    "/tourist/orders/{orderId}/pay": {
+      "post": {
+        "tags": [
+          "TouristOrder"
+        ],
+        "summary": "支付订单",
+        "description": "模拟支付当前游客未超时的待支付订单，并为每条订单明细生成电子票。",
+        "operationId": "payOrder",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrderId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "支付成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/OrderNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/OrderConflict"
+          }
+        }
+      }
+    },
+    "/tourist/orders/{orderId}/cancel": {
+      "post": {
+        "tags": [
+          "TouristOrder"
+        ],
+        "summary": "取消待支付订单",
+        "description": "取消当前游客的待支付订单，并归还场次容量和票种库存。",
+        "operationId": "cancelOrder",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrderId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OperationSucceeded"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/OrderNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/OrderConflict"
+          }
+        }
+      }
+    },
+    "/tourist/orders/{orderId}/refund": {
+      "post": {
+        "tags": [
+          "TouristOrder"
+        ],
+        "summary": "整单退款",
+        "description": "对尚未开始且不存在已核销票券的已支付订单执行即时整单退款。",
+        "operationId": "refundOrder",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrderId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OperationSucceeded"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/OrderNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/OrderConflict"
+          }
+        }
+      }
+    },
+    "/operator/orders": {
+      "get": {
+        "tags": [
+          "OperatorOrder"
+        ],
+        "summary": "运营端分页查询订单",
+        "description": "运营者或工作人员分页查询当前景点订单。",
+        "operationId": "pageVenueOrders",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Size"
+          },
+          {
+            "$ref": "#/components/parameters/OrderStatus"
+          },
+          {
+            "name": "orderNo",
+            "in": "query",
+            "required": false,
+            "description": "业务订单号，精确查询",
+            "schema": {
+              "type": "string",
+              "maxLength": 32
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "query",
+            "required": false,
+            "description": "场次 ID",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "visitDate",
+            "in": "query",
+            "required": false,
+            "description": "参观日期",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OrderPageSucceeded"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/operator/orders/{orderId}": {
+      "get": {
+        "tags": [
+          "OperatorOrder"
+        ],
+        "summary": "运营端获取订单详情",
+        "description": "运营者或工作人员获取当前景点订单详情及游客概要。",
+        "operationId": "getVenueOrder",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrderId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/OrderDetailSucceeded"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/OrderNotFound"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "parameters": {
+      "OrderId": {
+        "name": "orderId",
+        "in": "path",
+        "required": true,
+        "description": "订单 ID",
+        "schema": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1
+        }
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "description": "页码，从 1 开始",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "Size": {
+        "name": "size",
+        "in": "query",
+        "required": false,
+        "description": "每页数量",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      },
+      "OrderStatus": {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "description": "订单状态",
+        "schema": {
+          "$ref": "#/components/schemas/BookingOrderStatus"
+        }
+      }
+    },
+    "schemas": {
+      "BookingOrderStatus": {
+        "type": "string",
+        "description": "PENDING_PAYMENT 待支付，PAID 已支付，CANCELLED 用户取消，CLOSED 超时关闭，COMPLETED 已完成，REFUNDED 已退款",
+        "enum": [
+          "PENDING_PAYMENT",
+          "PAID",
+          "CANCELLED",
+          "CLOSED",
+          "COMPLETED",
+          "REFUNDED"
+        ]
+      },
+      "TicketStatus": {
+        "type": "string",
+        "description": "电子票状态",
+        "enum": [
+          "VALID",
+          "USED",
+          "VOID",
+          "EXPIRED"
+        ]
+      },
+      "OrderCreateItemRequest": {
+        "type": "object",
+        "required": [
+          "visitorId",
+          "sessionTicketTypeId"
+        ],
+        "properties": {
+          "visitorId": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "description": "当前游客名下处于 ACTIVE 状态的参观人 ID",
+            "example": 101
+          },
+          "sessionTicketTypeId": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "description": "目标场次中处于 ON_SALE 状态的场次票种配置 ID",
+            "example": 301
+          }
+        }
+      },
+      "OrderCreateRequest": {
+        "type": "object",
+        "required": [
+          "sessionId",
+          "items"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "example": 21
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "description": "订单明细，同一 visitorId 不能重复",
+            "items": {
+              "$ref": "#/components/schemas/OrderCreateItemRequest"
+            }
+          }
+        }
+      },
+      "OrderCreated": {
+        "type": "object",
+        "required": [
+          "id",
+          "orderNo",
+          "totalAmount",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 501
+          },
+          "orderNo": {
+            "type": "string",
+            "maxLength": 32,
+            "example": "202608010001"
+          },
+          "totalAmount": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "multipleOf": 0.01,
+            "example": 80.00
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingOrderStatus"
+          },
+          "expireAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "付费订单的支付截止时间；零元订单为空",
+            "example": "2026-08-01T13:15:00"
+          }
+        }
+      },
+      "PaymentResult": {
+        "type": "object",
+        "required": [
+          "orderId",
+          "orderNo",
+          "status",
+          "paymentNo",
+          "paidAt"
+        ],
+        "properties": {
+          "orderId": {
+            "type": "integer",
+            "format": "int64",
+            "example": 501
+          },
+          "orderNo": {
+            "type": "string",
+            "example": "202608010001"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingOrderStatus"
+          },
+          "paymentNo": {
+            "type": "string",
+            "maxLength": 64,
+            "example": "MOCK20260801000001"
+          },
+          "paidAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-01T13:05:00"
+          }
+        }
+      },
+      "OrderSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "orderNo",
+          "venueName",
+          "sessionId",
+          "visitDate",
+          "startTime",
+          "endTime",
+          "quantity",
+          "totalAmount",
+          "status",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 501
+          },
+          "orderNo": {
+            "type": "string",
+            "example": "202608010001"
+          },
+          "venueName": {
+            "type": "string",
+            "example": "海湾科技馆"
+          },
+          "sessionId": {
+            "type": "integer",
+            "format": "int64",
+            "example": 21
+          },
+          "visitDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-08-10"
+          },
+          "startTime": {
+            "type": "string",
+            "example": "09:00:00"
+          },
+          "endTime": {
+            "type": "string",
+            "example": "11:00:00"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 2
+          },
+          "totalAmount": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "multipleOf": 0.01,
+            "example": 80.00
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingOrderStatus"
+          },
+          "expireAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TicketSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "ticketCode",
+          "status",
+          "validFrom",
+          "validUntil"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 801
+          },
+          "ticketCode": {
+            "type": "string",
+            "maxLength": 64,
+            "example": "T20260801000001"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TicketStatus"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "visitorId",
+          "visitorName",
+          "visitorIdType",
+          "maskedVisitorIdNumber",
+          "sessionTicketTypeId",
+          "ticketTypeName",
+          "unitPrice"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 601
+          },
+          "visitorId": {
+            "type": "integer",
+            "format": "int64",
+            "example": 101
+          },
+          "visitorName": {
+            "type": "string",
+            "example": "张三"
+          },
+          "visitorIdType": {
+            "type": "string",
+            "example": "ID_CARD"
+          },
+          "maskedVisitorIdNumber": {
+            "type": "string",
+            "description": "脱敏后的证件号码",
+            "example": "440***********1234"
+          },
+          "sessionTicketTypeId": {
+            "type": "integer",
+            "format": "int64",
+            "example": 301
+          },
+          "ticketTypeName": {
+            "type": "string",
+            "example": "成人票"
+          },
+          "unitPrice": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "multipleOf": 0.01,
+            "example": 50.00
+          },
+          "ticket": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TicketSummary"
+              }
+            ],
+            "description": "未支付订单尚未生成票券时不返回该字段"
+          }
+        }
+      },
+      "OrderDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OrderSummary"
+          },
+          {
+            "type": "object",
+            "required": [
+              "items"
+            ],
+            "properties": {
+              "purchaserUserId": {
+                "type": "integer",
+                "format": "int64",
+                "description": "仅运营端详情需要返回"
+              },
+              "purchaserName": {
+                "type": "string",
+                "nullable": true,
+                "description": "仅运营端详情需要返回"
+              },
+              "purchaserPhone": {
+                "type": "string",
+                "nullable": true,
+                "description": "仅运营端详情需要返回"
+              },
+              "paymentNo": {
+                "type": "string",
+                "nullable": true
+              },
+              "paidAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "cancelledAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "closedAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "completedAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "refundAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/OrderItem"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "OrderPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderSummary"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "OrderCreatedApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrderCreated"
+          }
+        }
+      },
+      "PaymentApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PaymentResult"
+          }
+        }
+      },
+      "OrderPageApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrderPage"
+          }
+        }
+      },
+      "OrderDetailApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrderDetail"
+          }
+        }
+      },
+      "OperationApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          }
+        }
+      },
+      "ErrorApiResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "CONFLICT"
+          },
+          "message": {
+            "type": "string",
+            "example": "当前订单状态不允许执行该操作"
+          }
+        }
+      }
+    },
+    "responses": {
+      "OrderPageSucceeded": {
+        "description": "查询成功",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OrderPageApiResponse"
+            }
+          }
+        }
+      },
+      "OrderDetailSucceeded": {
+        "description": "查询成功",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OrderDetailApiResponse"
+            }
+          }
+        }
+      },
+      "OperationSucceeded": {
+        "description": "操作成功",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OperationApiResponse"
+            }
+          }
+        }
+      },
+      "InvalidRequest": {
+        "description": "请求参数不合法",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "INVALID_REQUEST",
+              "message": "订单明细不能为空"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "未登录或 JWT 已失效",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "UNAUTHORIZED",
+              "message": "请先登录"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "当前账号无权访问该接口",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "FORBIDDEN",
+              "message": "无权执行该操作"
+            }
+          }
+        }
+      },
+      "OrderNotFound": {
+        "description": "订单不存在，或不属于当前游客或景点",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "example": {
+              "code": "NOT_FOUND",
+              "message": "订单不存在"
+            }
+          }
+        }
+      },
+      "OrderConflict": {
+        "description": "库存不足、预约窗口关闭、订单状态不允许操作或退款条件不满足",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorApiResponse"
+            },
+            "examples": {
+              "insufficientStock": {
+                "value": {
+                  "code": "CONFLICT",
+                  "message": "场次或票种余量不足"
+                }
+              },
+              "invalidState": {
+                "value": {
+                  "code": "CONFLICT",
+                  "message": "当前订单状态不允许执行该操作"
+                }
+              },
+              "refundRejected": {
+                "value": {
+                  "code": "CONFLICT",
+                  "message": "订单已核销或场次已经开始，不能退款"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ]
+}
