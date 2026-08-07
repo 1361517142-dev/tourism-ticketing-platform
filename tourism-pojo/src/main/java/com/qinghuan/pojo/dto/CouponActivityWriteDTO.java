@@ -1,0 +1,47 @@
+package com.qinghuan.pojo.dto;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/** 创建或修改优惠券活动草稿的请求。 */
+@Getter
+@Setter
+public class CouponActivityWriteDTO {
+    @NotBlank(message = "活动名称不能为空")
+    @Size(max = 100, message = "活动名称不能超过100个字符")
+    private String name;
+
+    @NotNull(message = "使用门槛不能为空")
+    @DecimalMin(value = "0.00", message = "使用门槛不能小于0")
+    @Digits(integer = 8, fraction = 2, message = "使用门槛最多保留两位小数")
+    private BigDecimal thresholdAmount;
+
+    @NotNull(message = "优惠金额不能为空")
+    @DecimalMin(value = "0.00", inclusive = false, message = "优惠金额必须大于0")
+    @Digits(integer = 8, fraction = 2, message = "优惠金额最多保留两位小数")
+    private BigDecimal discountAmount;
+
+    @NotNull(message = "发行量不能为空")
+    @Positive(message = "发行量必须大于0")
+    @Max(value = 1_000_000, message = "发行量不能超过1000000")
+    private Integer totalStock;
+
+    @NotNull(message = "领取开始时间不能为空")
+    private LocalDateTime claimStartAt;
+    @NotNull(message = "领取结束时间不能为空")
+    private LocalDateTime claimEndAt;
+    @NotNull(message = "生效时间不能为空")
+    private LocalDateTime validFrom;
+    @NotNull(message = "失效时间不能为空")
+    private LocalDateTime validUntil;
+}
