@@ -6,6 +6,8 @@ import com.qinghuan.annotation.RefreshCreateTimeOrUpdateTime;
 import com.qinghuan.auth.context.UserContext;
 import com.qinghuan.common.exception.BusinessException;
 import com.qinghuan.common.exception.ErrorCode;
+import com.qinghuan.coupon.CouponDiscount;
+import com.qinghuan.coupon.CouponOrderService;
 import com.qinghuan.pojo.dto.OrderCreateDTO;
 import com.qinghuan.pojo.dto.OrderCreateItemRequest;
 import com.qinghuan.pojo.dto.OrderPageQueryDTO;
@@ -23,17 +25,19 @@ import com.qinghuan.session.SessionService;
 import com.qinghuan.ticket.TicketService;
 import com.qinghuan.visitor.VisitorService;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.qinghuan.common.constant.cacheKeys.LockConstant.LOCK_BOOKING_PREFIX;
 
 /**
  * 订单业务实现。
@@ -48,16 +52,24 @@ public class BookingServiceImpl implements BookingService {
     private final SessionInventoryService sessionInventoryService;
     private final TicketService ticketService;
     private final SessionService sessionService;
+    private final CouponOrderService couponOrderService;
+    private final RedissonClient redisson;
+    private final TransactionTemplate transactionTemplate;
 
     public BookingServiceImpl(BookingMapper bookingMapper,
                               VisitorService visitorService,
                               SessionInventoryService sessionInventoryService,
-                              TicketService ticketService, SessionService sessionService) {
+                              TicketService ticketService, SessionService sessionService,
+                              CouponOrderService couponOrderService,
+                              RedissonClient redisson, TransactionTemplate transactionTemplate) {
         this.bookingMapper = bookingMapper;
         this.visitorService = visitorService;
         this.sessionInventoryService = sessionInventoryService;
         this.ticketService = ticketService;
         this.sessionService = sessionService;
+        this.couponOrderService = couponOrderService;
+        this.redisson = redisson;
+        this.transactionTemplate = transactionTemplate;
     }
 
     /**
@@ -138,6 +150,9 @@ public class BookingServiceImpl implements BookingService {
             throw new BusinessException(ErrorCode.CONFLICT, "订单状态或支付期限发生变化");
         }
 
+        // 锁定券和订单支付状态处于同一事务，支付失败时不会单独消耗优惠券。
+        couponOrderService.markUsed(order.getUserCouponId(), now);
+
         // 票券与支付状态在同一事务中落库，任一失败都会整体回滚。
         ticketService.createTicketsForOrder(orderId, order.getQuantity());
         return true;
@@ -159,6 +174,7 @@ public class BookingServiceImpl implements BookingService {
                         OrderItemVO::getSessionTicketTypeId,
                         Collectors.summingInt(item -> 1)));
         sessionInventoryService.releaseInventory(order.getSessionId(), ticketTypeQuantities);
+        couponOrderService.releaseLocked(order.getUserCouponId(), closedAt);
     }
 
     /** 整单退款 */
@@ -228,6 +244,9 @@ public class BookingServiceImpl implements BookingService {
         // 释放库存
         sessionInventoryService.releaseInventory(order.getSessionId(), ticketTypeQuantities);
 
+        // 整单退款后返还优惠券；若此时已过有效期则直接记为 EXPIRED。
+        couponOrderService.restoreAfterRefund(order.getUserCouponId(), order.getRefundAt());
+
     }
 
     @Override
@@ -266,6 +285,7 @@ public class BookingServiceImpl implements BookingService {
 
         // 归还场次容量和sessionTicketType容量
         sessionInventoryService.releaseInventory(order.getSessionId(),  items.stream().collect(Collectors.groupingBy(OrderItemVO::getSessionTicketTypeId, Collectors.summingInt(item -> 1))));
+        couponOrderService.releaseLocked(order.getUserCouponId(), order.getCancelledAt());
     }
 
     @Override
@@ -286,6 +306,7 @@ public class BookingServiceImpl implements BookingService {
         List<OrderItemVO> items = bookingMapper.listOrderItems(order.getId());
         // 释放库存
         sessionInventoryService.releaseInventory(order.getSessionId(), items.stream().collect(Collectors.groupingBy(OrderItemVO::getSessionTicketTypeId, Collectors.summingInt(item -> 1))));
+        couponOrderService.releaseLocked(order.getUserCouponId(), order.getClosedAt());
 
     }
 
@@ -297,11 +318,11 @@ public class BookingServiceImpl implements BookingService {
 
     /** 创建订单、明细快照并预占库存，任一步失败都回滚。 */
     @Override
-    @Transactional
     public OrderCreatedVO createOrder(OrderCreateDTO createOrderDTO) {
         // 数据库同样限制一个订单内参观人唯一；这里提前返回更明确的业务错误。
         List<Long> visitorIds = createOrderDTO.items().stream()
                 .map(OrderCreateItemRequest::visitorId)
+                .sorted()
                 .toList();
         if (new HashSet<>(visitorIds).size() != visitorIds.size()) {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "同一个参观人不能重复下单");
@@ -313,6 +334,45 @@ public class BookingServiceImpl implements BookingService {
         if (!visitorsById.keySet().containsAll(visitorIds)) {
             throw new BusinessException(
                     ErrorCode.CONFLICT, "参观人不存在、不属于当前游客或已停用");
+        }
+
+        List<RLock> acquiredLocks = new ArrayList<>();
+        try {
+            // visitorId 已排序；多人订单固定顺序加锁，避免并发时产生死锁。
+            for (Long visitorId : visitorIds) {
+                String lockKey = LOCK_BOOKING_PREFIX
+                        + createOrderDTO.sessionId() + ":" + visitorId;
+                RLock lock = redisson.getLock(lockKey);
+                if (!lock.tryLock()) {
+                    throw new BusinessException(
+                            ErrorCode.CONFLICT, "参观人正在当前场次下单");
+                }
+                acquiredLocks.add(lock);
+            }
+
+            // TransactionTemplate 返回前事务已经提交，因此这些锁会一直持有到订单真正落库。
+            return transactionTemplate.execute(status ->
+                    createInTransaction(createOrderDTO, visitorsById, visitorIds));
+        } finally {
+            // 仅释放当前线程已持有的锁，逆序释放与获取顺序对应。
+            for (int i = acquiredLocks.size() - 1; i >= 0; i--) {
+                RLock lock = acquiredLocks.get(i);
+                if (lock.isHeldByCurrentThread()) {
+                    lock.unlock();
+                }
+            }
+        }
+    }
+
+    private OrderCreatedVO createInTransaction(OrderCreateDTO createOrderDTO,
+                                               Map<Long, Visitor> visitorsById,
+                                               List<Long> visitorIds) {
+        // 锁内再次查询有效订单，与后续写订单处于同一数据库事务。
+        List<BookingOrder> orders = bookingMapper.findConflictingOrdersBySessionAndVisitorIds(
+                createOrderDTO.sessionId(), visitorIds);
+        if (!orders.isEmpty()) {
+            throw new BusinessException(
+                    ErrorCode.CONFLICT, "参观人已在当前场次下单");
         }
 
         // 汇总每种场次票的购买数量，库存服务据此进行原子扣减。
@@ -331,9 +391,20 @@ public class BookingServiceImpl implements BookingService {
                         Function.identity()));
 
         // 价格只能取后端保存的场次售价，不能信任前端传入的金额。
-        BigDecimal totalAmount = createOrderDTO.items().stream()
+        BigDecimal originalAmount = createOrderDTO.items().stream()
                 .map(item -> ticketTypesById.get(item.sessionTicketTypeId()).getSalePrice())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        BigDecimal totalAmount = originalAmount;
+        if (createOrderDTO.userCouponId() != null) {
+            Long venueId = sessionService.getSessionVenueId(createOrderDTO.sessionId());
+            CouponDiscount discount = couponOrderService.lockForOrder(
+                    createOrderDTO.userCouponId(), UserContext.getRequired().userId(),
+                    venueId, originalAmount);
+            discountAmount = discount.discountAmount();
+            totalAmount = discount.payableAmount();
+        }
 
         // 订单号使用无分隔符 UUID，长度正好符合 order_no 的 32 字符限制。
         BookingOrder bookingOrder = new BookingOrder();
@@ -341,6 +412,9 @@ public class BookingServiceImpl implements BookingService {
         bookingOrder.setUserId(UserContext.getRequired().userId());
         bookingOrder.setSessionId(createOrderDTO.sessionId());
         bookingOrder.setQuantity(createOrderDTO.items().size());
+        bookingOrder.setUserCouponId(createOrderDTO.userCouponId());
+        bookingOrder.setOriginalAmount(originalAmount);
+        bookingOrder.setDiscountAmount(discountAmount);
         bookingOrder.setTotalAmount(totalAmount);
 
         // 零元订单无需经过支付接口，创建后直接视为已支付。
@@ -354,6 +428,11 @@ public class BookingServiceImpl implements BookingService {
 
         // 主键回填后才能为每条订单明细设置 orderId。
         bookingMapper.insertOrder(bookingOrder);
+
+        // 优惠后为零元的订单创建即支付，因此锁定券也要在本事务中直接核销。
+        if (bookingOrder.getStatus() == BookingOrderStatus.PAID) {
+            couponOrderService.markUsed(bookingOrder.getUserCouponId(), bookingOrder.getPaidAt());
+        }
         List<BookingOrderItem> orderItems = createOrderDTO.items().stream()
                 .map(item -> toOrderItem(
                         bookingOrder.getId(), item,

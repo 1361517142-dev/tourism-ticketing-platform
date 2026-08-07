@@ -22,6 +22,9 @@ public class OrderSummaryVO {
     private LocalTime startTime;
     private LocalTime endTime;
     private Integer quantity;
+    private Long userCouponId;
+    private BigDecimal originalAmount;
+    private BigDecimal discountAmount;
     private BigDecimal totalAmount;
     private BookingOrderStatus status;
     private LocalDateTime expireAt;

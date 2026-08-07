@@ -45,3 +45,6 @@ application-secret.yml
 *.swp
 *~
 
+# JMeter 本地测试账号和运行报告
+/tests/jmeter/coupon-seckill/users.csv
+/tests/jmeter/coupon-seckill/results/

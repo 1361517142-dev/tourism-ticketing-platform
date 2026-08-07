@@ -30,6 +30,9 @@ public interface SessionService {
      */
     LocalDateTime getSessionStartTime(Long sessionId);
 
+    /** 返回订单及优惠券校验所需的场次所属景点。 */
+    Long getSessionVenueId(Long sessionId);
+
     /**
      * 修改草稿场次，并整组替换票种售价和配额。
      */

@@ -57,6 +57,49 @@ spring:
       connect-timeout: 3s
       timeout: 3s
 
+  kafka:
+    # Kafka Broker 地址。本地开发默认使用 9092 端口。
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+    producer:
+      # Kafka 的 Key 使用普通字符串。
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+      # CouponClaimCommand 会被转换成 JSON。
+      # 项目使用 Spring Boot 4，所以使用 JacksonJsonSerializer。
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+
+      # 消息需要获得当前所有同步副本的确认。
+      acks: all
+
+      properties:
+        # 防止 Producer 因网络重试向同一分区写入重复消息。
+        "[enable.idempotence]": true
+
+    consumer:
+      # Kafka Key 是 requestId 字符串。
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+      # Kafka Value 是 CouponClaimCommand JSON。
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+
+      # 当前消费组第一次启动且没有 Offset 时，从最早的消息开始消费。
+      auto-offset-reset: earliest
+
+      # Offset 交给 Spring Kafka Listener 容器管理。
+      enable-auto-commit: false
+
+      properties:
+        # Producer 发送的是 CouponClaimCommand。
+        "[spring.json.value.default.type]": "com.qinghuan.coupon.message.CouponClaimCommand"
+
+        # 只允许反序列化当前项目的消息包。
+        "[spring.json.trusted.packages]": "com.qinghuan.coupon.message"
+
+    listener:
+      # 每处理完一条消息，再提交该条消息的 Offset。
+      ack-mode: record
+
 server:
   port: ${SERVER_PORT:8080}
   servlet:

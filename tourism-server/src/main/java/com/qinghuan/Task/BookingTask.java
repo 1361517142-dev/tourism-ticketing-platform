@@ -11,7 +11,6 @@ import java.util.List;
 
 @Slf4j
 @Component
-@EnableScheduling
 public class BookingTask {
     private BookingService bookingService;
     public BookingTask(BookingService bookingService) {

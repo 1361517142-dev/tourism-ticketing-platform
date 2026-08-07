@@ -13,6 +13,8 @@ import java.util.List;
  */
 public record OrderCreateDTO(
         @NotNull @Positive Long sessionId,
-        @NotEmpty @Valid List<OrderCreateItemRequest> items) {
+        @NotEmpty @Valid List<OrderCreateItemRequest> items,
+        // 可选；传入时由后端校验归属、景点、有效期和使用门槛。
+        @Positive Long userCouponId) {
 
 }

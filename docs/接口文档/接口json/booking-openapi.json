@@ -22,7 +22,7 @@
           "TouristOrder"
         ],
         "summary": "创建订单",
-        "description": "为当前游客创建订单并立即预占场次及票种库存。价格、快照和初始状态由后端生成。",
+        "description": "为当前游客创建订单并立即预占场次及票种库存。可选择一张适用于当前景点的游客优惠券，金额、快照和初始状态由后端生成。",
         "operationId": "createOrder",
         "requestBody": {
           "required": true,
@@ -33,6 +33,7 @@
               },
               "example": {
                 "sessionId": 21,
+                "userCouponId": 2001,
                 "items": [
                   {
                     "visitorId": 101,
@@ -461,6 +462,14 @@
             "minimum": 1,
             "example": 21
           },
+          "userCouponId": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "nullable": true,
+            "description": "可选的游客优惠券 ID；必须属于当前游客并适用于场次所属景点",
+            "example": 2001
+          },
           "items": {
             "type": "array",
             "minItems": 1,
@@ -476,6 +485,8 @@
         "required": [
           "id",
           "orderNo",
+          "originalAmount",
+          "discountAmount",
           "totalAmount",
           "status"
         ],
@@ -490,11 +501,28 @@
             "maxLength": 32,
             "example": "202608010001"
           },
+          "originalAmount": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "multipleOf": 0.01,
+            "description": "使用优惠券前的订单金额",
+            "example": 100.00
+          },
+          "discountAmount": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "multipleOf": 0.01,
+            "description": "本单优惠金额；未使用优惠券时为 0",
+            "example": 20.00
+          },
           "totalAmount": {
             "type": "number",
             "format": "double",
             "minimum": 0,
             "multipleOf": 0.01,
+            "description": "优惠后的最终应付金额",
             "example": 80.00
           },
           "status": {
@@ -554,6 +582,8 @@
           "startTime",
           "endTime",
           "quantity",
+          "originalAmount",
+          "discountAmount",
           "totalAmount",
           "status",
           "createdAt"
@@ -595,11 +625,32 @@
             "minimum": 1,
             "example": 2
           },
+          "userCouponId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true,
+            "description": "本单使用的游客优惠券 ID"
+          },
+          "originalAmount": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "multipleOf": 0.01,
+            "example": 100.00
+          },
+          "discountAmount": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "multipleOf": 0.01,
+            "example": 20.00
+          },
           "totalAmount": {
             "type": "number",
             "format": "double",
             "minimum": 0,
             "multipleOf": 0.01,
+            "description": "优惠后的最终应付金额",
             "example": 80.00
           },
           "status": {
@@ -1018,7 +1069,7 @@
         }
       },
       "OrderConflict": {
-        "description": "库存不足、预约窗口关闭、订单状态不允许操作或退款条件不满足",
+        "description": "库存不足、预约窗口关闭、优惠券不可用、订单状态不允许操作或退款条件不满足",
         "content": {
           "application/json": {
             "schema": {
@@ -1035,6 +1086,12 @@
                 "value": {
                   "code": "CONFLICT",
                   "message": "当前订单状态不允许执行该操作"
+                }
+              },
+              "couponUnavailable": {
+                "value": {
+                  "code": "CONFLICT",
+                  "message": "优惠券不可用或未达到使用门槛"
                 }
               },
               "refundRejected": {

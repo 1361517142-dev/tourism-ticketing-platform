@@ -8,6 +8,7 @@
     <sql id="orderSummaryColumns">
         bo.id, bo.order_no, v.name as venue_name, bo.session_id,
         s.visit_date, s.start_time, s.end_time, bo.quantity,
+        bo.user_coupon_id, bo.original_amount, bo.discount_amount,
         bo.total_amount, bo.status, bo.expire_at, bo.created_at
     </sql>
 
@@ -74,6 +75,9 @@
         <result property="startTime" column="start_time"/>
         <result property="endTime" column="end_time"/>
         <result property="quantity" column="quantity"/>
+        <result property="userCouponId" column="user_coupon_id"/>
+        <result property="originalAmount" column="original_amount"/>
+        <result property="discountAmount" column="discount_amount"/>
         <result property="totalAmount" column="total_amount"/>
         <result property="status" column="status"/>
         <result property="expireAt" column="expire_at"/>
@@ -196,6 +200,22 @@
     <select id="findOrderByOrderId" resultType="com.qinghuan.pojo.entity.BookingOrder">
         select * from booking_order where id = #{id}
     </select>
+
+    <!-- 取消、超时关闭和退款已释放占位，允许参观人重新购买当前场次。 -->
+    <select id="findConflictingOrdersBySessionAndVisitorIds"
+            resultType="com.qinghuan.pojo.entity.BookingOrder">
+        select distinct bo.*
+        from booking_order bo
+        join booking_order_item boi on boi.order_id = bo.id
+        where bo.session_id = #{sessionId}
+          and bo.status in ('PENDING_PAYMENT', 'PAID', 'COMPLETED')
+          and boi.visitor_id in
+        <foreach collection="visitorIds" item="visitorId"
+                 open="(" close=")" separator=",">
+            #{visitorId}
+        </foreach>
+    </select>
+
     <select id="listTimeoutOrders" resultType="com.qinghuan.pojo.entity.BookingOrder">
         select *
         from booking_order
@@ -206,10 +226,12 @@
     <!-- 数据库负责审计时间，useGeneratedKeys 将自增订单 ID 回填到实体。 -->
     <insert id="insertOrder" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
         insert into booking_order
-            (order_no, user_id, session_id, quantity, total_amount, status,
+            (order_no, user_id, session_id, quantity, user_coupon_id,
+             original_amount, discount_amount, total_amount, status,
              payment_no, expire_at, paid_at, cancelled_at, closed_at, completed_at, refund_at)
         values
-            (#{orderNo}, #{userId}, #{sessionId}, #{quantity}, #{totalAmount}, #{status},
+            (#{orderNo}, #{userId}, #{sessionId}, #{quantity}, #{userCouponId},
+             #{originalAmount}, #{discountAmount}, #{totalAmount}, #{status},
              #{paymentNo}, #{expireAt}, #{paidAt}, #{cancelledAt}, #{closedAt}, #{completedAt}, #{refundAt})
     </insert>
 
